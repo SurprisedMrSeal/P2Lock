@@ -6,8 +6,6 @@ const prefix = config.prefix;
 const BotID = config.BotID;
 const BotRegexp = new RegExp(`<@!?${BotID}>`);
 
-app.listen(port, () => console.log(`Bot's turning on......`));
-
 const client = new Client({
     intents: [
         Intents.FLAGS.GUILDS,
