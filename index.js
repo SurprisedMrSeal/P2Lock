@@ -1,9 +1,5 @@
-const express = require('express');
 const { Client, Intents } = require('discord.js');
 const { Permissions } = require('discord.js');
-
-const app = express();
-const port = 3000;
 const config = require('./config.json');
 const token = config.token;
 const prefix = config.prefix;

@@ -1,6 +1,8 @@
 {
   "dependencies": {
-    "discord.js": "^12.5.3",
-    "express": "^4.18.2"
+    "discord.js": "^12.5.3"
+  },
+  "scripts": {
+    "bot": "node index.js"
   }
 }
