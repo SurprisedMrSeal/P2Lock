@@ -21,6 +21,7 @@ Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
 
 - Download all the files (License and README unnecessary) and put them wherever you're hosting the bot
 (If you're hosting it on your device, you'll need to download [Node.js](https://nodejs.org/))
+- You will probably need to run "npm i discord.js@v12" in the terminal if you're hosting it locally
 - open "config.json" and add the values for token, BotID and prefix (you should've copied the bot's ID and token during "Building the bot")
 - Click on "run" or type "npm run bot" in the console!
 
