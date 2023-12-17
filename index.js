@@ -1,5 +1,4 @@
-const { Client, Intents } = require('discord.js');
-const { Permissions } = require('discord.js');
+const { Client, Intents, MessageEmbed } = require('discord.js');
 const config = require('./config.json');
 const token = config.token;
 const prefix = config.prefix;
@@ -14,22 +13,50 @@ const client = new Client({
     ],
 });
 
-client.on('ready', () => {
-    console.log(`${client.user.tag} is on!`);
+const commands = [
+    { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
+    { name: 'ping', description: `Checks the bot\'s latency.\n\`${prefix}ping\`` },
+    { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
+    { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\`` },
+];
 
+client.on('ready', () => {
     client.user.setPresence({
-        status: 'idle',
-        activities: [
-            {
-                name: 'P2Lock',
-                type: 'PLAYING',
-            },
-        ],
+        activity: { name: `${prefix}help`, type: 'PLAYING' },
+        status: 'idle'
     });
+
+    console.log(`${client.user.tag} is on!`);
+});
+
+// help command
+client.on('message', async msg => {
+    if (msg.author.bot) return;
+    const firstArg = msg.content.split(' ')[0];
+    if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
+    const pingUsed = BotRegexp.test(firstArg)
+    let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" "); // We are going to assume the user keeps the space between the ping and the command
+    let cmd = args.shift();
+    if (cmd === "help") {
+        const user = msg.member.user;
+
+        const embed = new MessageEmbed()
+            .setTitle('Command List')
+            .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
+            .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>`)
+            .setColor('#008080');
+
+        commands.forEach(command => {
+            embed.addField(`**${command.name}**`, command.description, false);
+        });
+
+        return msg.channel.send(embed);
+    }
 });
 
 // ping
 client.on('message', msg => {
+  if (msg.author.bot) return;
   const firstArg = msg.content.split(' ')[0];
   if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
   const pingUsed = BotRegexp.test(firstArg)
@@ -43,6 +70,7 @@ client.on('message', msg => {
 
 // lock
 client.on('message', async msg => {
+    if (msg.author.bot) return;
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
     const pingUsed = BotRegexp.test(firstArg)
@@ -80,6 +108,7 @@ client.on('message', async msg => {
 
 // unlock
 client.on('message', async msg => {
+    if (msg.author.bot) return;
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
     const pingUsed = BotRegexp.test(firstArg)
@@ -161,14 +190,22 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
 // Message Event
 client.on('message', async msg => {
-    if (msg.author.id === '874910942490677270' &&
+    if (
+        (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
         ((msg.content.startsWith('**✨Shiny Hunt Pings:** ')) ||
-            (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ')))) {
-
+        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ')))
+    ) {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
 
-            const userPermissions = channel.permissionOverwrites.get(lockUserId);
+            // Check if the channel is already locked
+            const existingPermissions = channel.permissionOverwrites.get(lockUserId);
+
+            if (existingPermissions && existingPermissions.deny.has('VIEW_CHANNEL')) {
+                return;
+            }
+
+            const userPermissions = existingPermissions || channel.permissionOverwrites.get(lockUserId);
 
             if (userPermissions) {
                 await userPermissions.update({
