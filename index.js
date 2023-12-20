@@ -111,7 +111,7 @@ client.on('message', async msg => {
     if (msg.author.bot) return;
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
-    const pingUsed = BotRegexp.test(firstArg)
+    const pingUsed = BotRegexp.test(firstArg);
     let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
 
@@ -122,20 +122,18 @@ client.on('message', async msg => {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
             const userPermissions = channel.permissionOverwrites.get(userIdToAllow);
 
-            if (userPermissions) {
+            if (userPermissions && !userPermissions.allow.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
                 await userPermissions.update({
                     VIEW_CHANNEL: true,
                     SEND_MESSAGES: true
                 });
-            } else {
-                await channel.createOverwrite(userIdToAllow, {
-                    VIEW_CHANNEL: true,
-                    SEND_MESSAGES: true
-                });
-            }
 
-            return msg.react('✅')
-                .catch(error => console.error('Error sending unlock success message:', error));
+                const username = msg.author.username;
+
+                const sentMessage = await msg.channel.send(`The channel has been unlocked by \`@${username}\`.`);
+            } else {
+                return msg.channel.send('The channel is already unlocked.');
+            }
         } catch (error) {
             console.error('Error in unlock command:', error);
             return msg.channel.send('An error occurred while unlocking the channel.')
@@ -145,11 +143,9 @@ client.on('message', async msg => {
 });
 
 //react to unlock
-let lockUserId = '716390085896962058'; // Declare lockUserId at the top
-
+let lockUserId = '716390085896962058';
 let lockMessageId;
 
-// Reaction Add Event
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '🔓' && user.id !== client.user.id) {
         try {
@@ -157,28 +153,19 @@ client.on('messageReactionAdd', async (reaction, user) => {
                 const userIdToAllow = "716390085896962058";
                 const channel = reaction.message.guild.channels.cache.get(reaction.message.channel.id);
 
-                const userPermissions = channel.permissionOverwrites.get(userIdToAllow);
+                const userPermissions = channel.permissionsFor(userIdToAllow);
 
-                if (userPermissions) {
-                    await userPermissions.update({
+                if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
+                    await channel.updateOverwrite(userIdToAllow, {
                         VIEW_CHANNEL: true,
                         SEND_MESSAGES: true
                     });
+
+                    const username = user.username;
+                    await reaction.message.channel.send(`The channel has been unlocked by \`@${username}\`.`);
                 } else {
-                    const targetUser = reaction.message.guild.members.cache.get(userIdToAllow);
-
-                    if (!targetUser) {
-                        return reaction.message.channel.send('User not found. Check if the bot is in your server.')
-                            .catch(error => console.error('Error sending user not found message or reacting:', error));
-                    }
-
-                    await channel.createOverwrite(targetUser, {
-                        VIEW_CHANNEL: true,
-                        SEND_MESSAGES: true
-                    });
+                    await reaction.message.channel.send('The channel is already unlocked.');
                 }
-
-                await reaction.message.channel.send('The channel has been unlocked.');
             }
         } catch (error) {
             console.error('Error in unlock command:', error);
@@ -188,7 +175,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
-// Message Event
+// Rare/Regional/SH Hunt on Poke-Name and P2 Assistant
 client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
@@ -198,7 +185,6 @@ client.on('message', async msg => {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
 
-            // Check if the channel is already locked
             const existingPermissions = channel.permissionOverwrites.get(lockUserId);
 
             if (existingPermissions && existingPermissions.deny.has('VIEW_CHANNEL')) {
