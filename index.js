@@ -18,6 +18,7 @@ const commands = [
     { name: 'ping', description: `Checks the bot\'s latency.\n\`${prefix}ping\`` },
     { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
     { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\`` },
+    { name: 'pingafk', description: `Pings the afk members (Poké-Name).\n\`${prefix}pingafk\` \`${prefix}pa\`` },
 ];
 
 client.on('ready', () => {
@@ -68,6 +69,46 @@ client.on('message', msg => {
   }
 });
 
+// pingafk
+client.on('message', async msg => {
+    if (msg.author.bot) return;
+    const firstArg = msg.content.split(' ')[0];
+    if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
+    const pingUsed = BotRegexp.test(firstArg);
+    let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
+    let cmd = args.shift();
+
+    if ((cmd === "pingafk" || cmd === "pa") && msg.reference) {
+        const Pname = '874910942490677270';
+        const referencedMessage = await msg.channel.messages.fetch(msg.reference.messageID).catch(console.error);
+
+        if (referencedMessage && referencedMessage.content && referencedMessage.author.id === Pname) {
+            const mentionedUsers = [];
+            const userIdRegex = /(\d{17,19}) \(AFK\)/g;
+            let match;
+
+            const shinyHuntPingsSectionRegex = /\*\*✨Shiny Hunt Pings:\*\*([\s\S]*?)(?=(\*\*|$))/;
+            const shinyHuntPingsSection = shinyHuntPingsSectionRegex.exec(referencedMessage.content);
+
+            if (shinyHuntPingsSection && shinyHuntPingsSection[1]) {
+                while ((match = userIdRegex.exec(shinyHuntPingsSection[1])) !== null) {
+                    mentionedUsers.push(match[1]);
+                }
+            }
+
+            const afkUsers = mentionedUsers
+                .map(userId => `<@${userId}>`)
+                .filter(userMention => !msg.content.includes(userMention));
+
+            if (afkUsers.length > 0) {
+                msg.channel.send(`Pinging AFK Hunters: ${afkUsers.join(' ')}`);
+            } else {
+                msg.channel.send('No AFK Hunters to ping.');
+            }
+        }
+    }
+});
+
 // lock
 client.on('message', async msg => {
     if (msg.author.bot) return;
@@ -100,7 +141,7 @@ client.on('message', async msg => {
                 .catch(error => console.error('Error sending lock success message:', error));
         } catch (error) {
             console.error('Error in lock command:', error);
-            return msg.channel.send('An error occurred while locking the channel.')
+            return msg.channel.send('Hmm, something prevented me from locking this channel.')
                 .catch(error => console.error('Error sending lock error message:', error));
         }
     }
@@ -130,13 +171,13 @@ client.on('message', async msg => {
 
                 const username = msg.author.username;
 
-                const sentMessage = await msg.channel.send(`The channel has been unlocked by \`@${username}\`.`);
+                const sentMessage = await msg.channel.send(`This channel has been unlocked by \`${username}\`!`);
             } else {
-                return msg.channel.send('The channel is already unlocked.');
+                return msg.channel.send('This channel is already unlocked.');
             }
         } catch (error) {
             console.error('Error in unlock command:', error);
-            return msg.channel.send('An error occurred while unlocking the channel.')
+            return msg.channel.send('Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('Error sending unlock error message:', error));
         }
     }
@@ -162,14 +203,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     });
 
                     const username = user.username;
-                    await reaction.message.channel.send(`The channel has been unlocked by \`@${username}\`.`);
+                    await reaction.message.channel.send(`This channel has been unlocked by \`${username}\`.`);
                 } else {
-                    await reaction.message.channel.send('The channel is already unlocked.');
+                    await reaction.message.channel.send('This channel is already unlocked.');
                 }
             }
         } catch (error) {
             console.error('Error in unlock command:', error);
-            return reaction.message.channel.send('An error occurred while unlocking the channel.')
+            return reaction.message.channel.send('Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('Error sending unlock error message:', error));
         }
     }
@@ -217,7 +258,7 @@ client.on('message', async msg => {
             lockMessageId = lockMessage.id;
         } catch (error) {
             console.error('Error in lock command:', error);
-            return msg.channel.send('An error occurred while locking the channel.')
+            return msg.channel.send('Hmm, something prevented me from locking this channel.')
                 .catch(error => console.error('Error sending lock error message:', error));
         }
     }
