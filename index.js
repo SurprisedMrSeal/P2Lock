@@ -18,7 +18,7 @@ const commands = [
     { name: 'ping', description: `Checks the bot\'s latency.\n\`${prefix}ping\`` },
     { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
     { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\`` },
-    { name: 'pingafk', description: `Pings the afk members (Poké-Name).\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+    { name: 'pingafk', description: `[Pings the afk members (Poké-Name).](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
 ];
 
 client.on('ready', () => {
