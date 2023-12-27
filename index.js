@@ -1,5 +1,9 @@
 const { Client, Intents, MessageEmbed } = require('discord.js');
 const config = require('./config.json');
+const fs = require('fs');
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const version = packageJson.version;
+
 const token = config.token;
 const prefix = config.prefix;
 const BotID = config.BotID;
@@ -23,7 +27,7 @@ const commands = [
 
 client.on('ready', () => {
     client.user.setPresence({
-        activity: { name: `${prefix}help`, type: 'PLAYING' },
+        activity: { name: `${prefix}help | ${version}`, type: 'PLAYING' },
         status: 'idle'
     });
 
@@ -185,14 +189,16 @@ client.on('message', async msg => {
 
 //react to unlock
 let lockUserId = '716390085896962058';
-let lockMessageId;
 
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '🔓' && user.id !== client.user.id) {
         try {
-            if (reaction.message.id === lockMessageId) {
+            const message = reaction.message;
+
+            // Check if the message is from the bot and is a lock message
+            if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or type `${prefix}unlock`.')) {
                 const userIdToAllow = "716390085896962058";
-                const channel = reaction.message.guild.channels.cache.get(reaction.message.channel.id);
+                const channel = message.guild.channels.cache.get(message.channel.id);
 
                 const userPermissions = channel.permissionsFor(userIdToAllow);
 
@@ -203,20 +209,19 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     });
 
                     const username = user.username;
-                    await reaction.message.channel.send(`This channel has been unlocked by \`${username}\`.`);
+                    await message.channel.send(`This channel has been unlocked by \`${username}\`.`);
                 } else {
-                    await reaction.message.channel.send('This channel is already unlocked.');
+                    await message.channel.send('This channel is already unlocked.');
                 }
             }
         } catch (error) {
             console.error('Error in unlock command:', error);
-            return reaction.message.channel.send('Hmm, something prevented me from unlocking this channel.')
+            return message.channel.send('Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('Error sending unlock error message:', error));
         }
     }
 });
 
-// Rare/Regional/SH Hunt on Poke-Name and P2 Assistant
 client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
@@ -253,9 +258,9 @@ client.on('message', async msg => {
                 });
             }
 
+            // Send the lock message
             const lockMessage = await msg.channel.send(`The channel has been locked. Click on 🔓 to unlock or type \`${prefix}unlock\`.`);
             lockMessage.react('🔓');
-            lockMessageId = lockMessage.id;
         } catch (error) {
             console.error('Error in lock command:', error);
             return msg.channel.send('Hmm, something prevented me from locking this channel.')
