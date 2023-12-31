@@ -40,7 +40,7 @@ client.on('message', async msg => {
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
     const pingUsed = BotRegexp.test(firstArg)
-    let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" "); // We are going to assume the user keeps the space between the ping and the command
+    let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
     if (cmd === "help") {
         const user = msg.member.user;
@@ -65,7 +65,7 @@ client.on('message', msg => {
   const firstArg = msg.content.split(' ')[0];
   if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
   const pingUsed = BotRegexp.test(firstArg)
-  let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" "); // We are going to assume the user keeps the space between the ping and the command
+  let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
   let cmd = args.shift();
   if (cmd == "ping") {
     const ping = msg.createdTimestamp - Date.now();
@@ -195,7 +195,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
         try {
             const message = reaction.message;
 
-            // Check if the message is from the bot and is a lock message
             if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or type `${prefix}unlock`.')) {
                 const userIdToAllow = "716390085896962058";
                 const channel = message.guild.channels.cache.get(message.channel.id);
@@ -222,11 +221,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
+//shinyhunt/rare/regional autolock
 client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
         ((msg.content.startsWith('**✨Shiny Hunt Pings:** ')) ||
-        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ')))
+        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ') || msg.content.includes('Rare ping: ')))
     ) {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
