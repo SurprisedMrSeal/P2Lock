@@ -1,6 +1,6 @@
 {
   "name": "p2lock",
-  "version": "1.11.3",
+  "version": "1.11.4",
   "dependencies": {
     "discord.js": "^12.5.3"
   },

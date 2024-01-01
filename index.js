@@ -188,16 +188,20 @@ client.on('message', async msg => {
 });
 
 //react to unlock
-let lockUserId = '716390085896962058';
+const lockUserId = '716390085896962058';
 
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '🔓' && user.id !== client.user.id) {
         try {
             const message = reaction.message;
+            const messageId = message.id;
 
-            if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or type `${prefix}unlock`.')) {
+            if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or')) {
                 const userIdToAllow = "716390085896962058";
                 const channel = message.guild.channels.cache.get(message.channel.id);
+
+                // Fetch the message to make sure it's the latest version
+                const fetchedMessage = await channel.messages.fetch(messageId);
 
                 const userPermissions = channel.permissionsFor(userIdToAllow);
 
@@ -208,9 +212,9 @@ client.on('messageReactionAdd', async (reaction, user) => {
                     });
 
                     const username = user.username;
-                    await message.channel.send(`This channel has been unlocked by \`${username}\`.`);
+                    await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`.`);
                 } else {
-                    await message.channel.send('This channel is already unlocked.');
+                    await fetchedMessage.channel.send('This channel is already unlocked.');
                 }
             }
         } catch (error) {
