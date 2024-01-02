@@ -230,7 +230,7 @@ client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
         ((msg.content.startsWith('**✨Shiny Hunt Pings:** ')) ||
-        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ') || msg.content.includes('Rare ping: ')))
+        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ') || msg.content.includes('Rare ping: ') || msg.content.includes('Regional ping: ')))
     ) {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
