@@ -3,6 +3,7 @@ const config = require('./config.json');
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
+const chunk = require('lodash.chunk');
 
 const token = config.token;
 const prefix = config.prefix;
@@ -21,8 +22,9 @@ const commands = [
     { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
     { name: 'ping', description: `Checks the bot\'s latency.\n\`${prefix}ping\`` },
     { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
-    { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\`` },
+    { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
     { name: 'pingafk', description: `[Pings the afk members (Poké-Name).](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+    { name: 'locklist', description: `Shows a list of locked channels.\n\`${prefix}locklist\` \`${prefix}ll\`` },
 ];
 
 client.on('ready', () => {
@@ -34,7 +36,7 @@ client.on('ready', () => {
     console.log(`${client.user.tag} is on!`);
 });
 
-// help command
+// help
 client.on('message', async msg => {
     if (msg.author.bot) return;
     const firstArg = msg.content.split(' ')[0];
@@ -49,7 +51,8 @@ client.on('message', async msg => {
             .setTitle('Command List')
             .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
             .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>`)
-            .setColor('#008080');
+            .setColor('#008080')
+            .setFooter(`Version: ${version}`);
 
         commands.forEach(command => {
             embed.addField(`**${command.name}**`, command.description, false);
@@ -141,8 +144,8 @@ client.on('message', async msg => {
                 });
             }
 
-            return msg.react('✅')
-                .catch(error => console.error('Error sending lock success message:', error));
+            const lockMessage = await msg.channel.send('The channel has been locked. Click on 🔓 to unlock or type `' + prefix + 'unlock`.');
+            await lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
             return msg.channel.send('Hmm, something prevented me from locking this channel.')
@@ -160,7 +163,7 @@ client.on('message', async msg => {
     let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
 
-    if (cmd === "unlock" || cmd === "ul") {
+    if (cmd === "unlock" || cmd === "ul" || cmd === "u") {
         const userIdToAllow = "716390085896962058";
 
         try {
@@ -187,7 +190,7 @@ client.on('message', async msg => {
     }
 });
 
-//react to unlock
+// react to unlock
 const lockUserId = '716390085896962058';
 
 client.on('messageReactionAdd', async (reaction, user) => {
@@ -196,24 +199,28 @@ client.on('messageReactionAdd', async (reaction, user) => {
             const message = reaction.message;
             const messageId = message.id;
 
+            // Check if the reacted message is from the bot and contains lock message content
             if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or')) {
                 const userIdToAllow = "716390085896962058";
                 const channel = message.guild.channels.cache.get(message.channel.id);
 
-                // Fetch the message to make sure it's the latest version
                 const fetchedMessage = await channel.messages.fetch(messageId);
 
                 const userPermissions = channel.permissionsFor(userIdToAllow);
 
+                // Check if the user has locked permissions and the channel is locked
                 if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
+                    // Update channel permissions to allow viewing and sending messages
                     await channel.updateOverwrite(userIdToAllow, {
                         VIEW_CHANNEL: true,
                         SEND_MESSAGES: true
                     });
 
                     const username = user.username;
+                    // Send a message indicating the channel has been unlocked
                     await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`.`);
                 } else {
+                    // Send a message indicating the channel is already unlocked
                     await fetchedMessage.channel.send('This channel is already unlocked.');
                 }
             }
@@ -225,7 +232,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
     }
 });
 
-//shinyhunt/rare/regional autolock
+// shinyhunt/rare/regional autolock (Poké-Name and P2 Assistant)
 client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
@@ -262,13 +269,56 @@ client.on('message', async msg => {
                 });
             }
 
-            // Send the lock message
             const lockMessage = await msg.channel.send(`The channel has been locked. Click on 🔓 to unlock or type \`${prefix}unlock\`.`);
             lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
             return msg.channel.send('Hmm, something prevented me from locking this channel.')
                 .catch(error => console.error('Error sending lock error message:', error));
+        }
+    }
+});
+
+// locklist
+client.on('message', async msg => {
+    if (msg.author.bot) return;
+    const firstArg = msg.content.split(' ')[0];
+    if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
+    const pingUsed = BotRegexp.test(firstArg);
+    let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
+    let cmd = args.shift();
+
+    // Define the command and its alias
+    if (cmd === "locklist" || cmd === "ll") {
+        try {
+            // Retrieve the guild's channels
+            const guildChannels = msg.guild.channels.cache;
+            // Filter the locked channels
+            const lockedChannels = guildChannels.filter(channel => {
+                const permissions = channel.permissionOverwrites.get(lockUserId);
+                return permissions && permissions.deny.has('VIEW_CHANNEL');
+            }).array();
+
+            // Paginate the locked channels into chunks of 20
+            const paginatedChannels = chunk(lockedChannels, 20);
+
+            // Create and send an embed for each page
+            for (let i = 0; i < paginatedChannels.length; i++) {
+                const embed = new MessageEmbed()
+                    .setTitle('Locked Channels')
+                    .setDescription(`Page ${i + 1}/${paginatedChannels.length}`)
+                    .setColor('#008080');
+
+                paginatedChannels[i].forEach(channel => {
+                    embed.addField(channel.name, `<#${channel.id}>`, true);
+                });
+
+                await msg.channel.send(embed);
+            }
+        } catch (error) {
+            console.error('Error in locklist command:', error);
+            return msg.channel.send('Hmm, something went wrong while retrieving the locked channels.')
+                .catch(error => console.error('Error sending locklist error message:', error));
         }
     }
 });
