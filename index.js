@@ -1,4 +1,4 @@
-const { Client, Intents, MessageEmbed } = require('discord.js');
+const { Client, Intents, MessageEmbed, ReactionCollector } = require('discord.js');
 const config = require('./config.json');
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -303,18 +303,35 @@ client.on('message', async msg => {
             const paginatedChannels = chunk(lockedChannels, 20);
 
             // Create and send an embed for each page
-            for (let i = 0; i < paginatedChannels.length; i++) {
-                const embed = new MessageEmbed()
-                    .setTitle('Locked Channels')
-                    .setDescription(`Page ${i + 1}/${paginatedChannels.length}`)
-                    .setColor('#008080');
+            let currentPage = 0;
+            const embed = new MessageEmbed()
+                .setTitle('Locked Channels')
+                .setColor('#008080')
+                .setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}`);
 
-                paginatedChannels[i].forEach(channel => {
-                    embed.addField(channel.name, `<#${channel.id}>`, true);
-                });
+            const sendEmbed = async () => {
+                embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
+                const sentMessage = await msg.channel.send(embed);
+                if (paginatedChannels.length > 1) {
+                    await sentMessage.react('◀️');
+                    await sentMessage.react('▶️');
 
-                await msg.channel.send(embed);
-            }
+                    const collector = new ReactionCollector(sentMessage, (reaction, user) => ['◀️', '▶️'].includes(reaction.emoji.name) && !user.bot);
+                    collector.on('collect', async (reaction, user) => {
+                        await reaction.users.remove(user);
+                        if (reaction.emoji.name === '◀️') {
+                            currentPage = (currentPage === 0) ? paginatedChannels.length - 1 : currentPage - 1;
+                        } else if (reaction.emoji.name === '▶️') {
+                            currentPage = (currentPage === paginatedChannels.length - 1) ? 0 : currentPage + 1;
+                        }
+                        embed.setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}`);
+                        embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
+                        await sentMessage.edit(embed);
+                    });
+                }
+            };
+
+            sendEmbed();
         } catch (error) {
             console.error('Error in locklist command:', error);
             return msg.channel.send('Hmm, something went wrong while retrieving the locked channels.')
