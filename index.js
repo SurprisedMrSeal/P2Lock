@@ -4,6 +4,7 @@ const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
 const chunk = require('lodash.chunk');
+const startTime = Date.now();
 
 const token = config.token;
 const prefix = config.prefix;
@@ -20,20 +21,30 @@ const client = new Client({
 
 const commands = [
     { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
-    { name: 'ping', description: `Checks the bot\'s latency.\n\`${prefix}ping\`` },
+    { name: 'ping', description: `Displays the bot\'s latency.\n\`${prefix}ping\`` },
     { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
     { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
-    { name: 'pingafk', description: `[Pings the afk members (Poké-Name).](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
-    { name: 'locklist', description: `Shows a list of locked channels.\n\`${prefix}locklist\` \`${prefix}ll\`` },
+    { name: 'pingafk', description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+    { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
 ];
 
+function getRuntime() {
+    const currentTime = Date.now();
+    const uptime = currentTime - startTime;
+    const hours = Math.floor(uptime / 3600000);
+    const minutes = Math.floor((uptime % 3600000) / 60000);
+    const seconds = Math.floor((uptime % 60000) / 1000);
+    return `${hours}h ${minutes}m ${seconds}s`;
+}
+
+//status
 client.on('ready', () => {
     client.user.setPresence({
         activity: { name: `${prefix}help | ${version}`, type: 'PLAYING' },
         status: 'idle'
     });
 
-    console.log(`${client.user.tag} is on!`);
+    console.log(`${client.user.tag} is online and ready!`);
 });
 
 // help
@@ -52,7 +63,7 @@ client.on('message', async msg => {
             .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
             .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>`)
             .setColor('#008080')
-            .setFooter(`Version: ${version}`);
+            .setFooter(`Version: ${version} | Runtime: ${getRuntime()}`);
 
         commands.forEach(command => {
             embed.addField(`**${command.name}**`, command.description, false);
@@ -144,7 +155,9 @@ client.on('message', async msg => {
                 });
             }
 
-            const lockMessage = await msg.channel.send('The channel has been locked. Click on 🔓 to unlock or type `' + prefix + 'unlock`.');
+            const username = msg.author.username;
+
+            const lockMessage = await msg.channel.send(`This channel has been locked by \`${username}\`. Click on 🔓 or type \`${prefix}unlock\` to unlock!`);
             await lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
@@ -199,8 +212,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
             const message = reaction.message;
             const messageId = message.id;
 
-            // Check if the reacted message is from the bot and contains lock message content
-            if (message.author.bot && message.content.includes('The channel has been locked. Click on 🔓 to unlock or')) {
+            if (message.author.bot && message.content.includes('This channel has been locked')) {
                 const userIdToAllow = "716390085896962058";
                 const channel = message.guild.channels.cache.get(message.channel.id);
 
@@ -208,19 +220,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
 
                 const userPermissions = channel.permissionsFor(userIdToAllow);
 
-                // Check if the user has locked permissions and the channel is locked
                 if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
-                    // Update channel permissions to allow viewing and sending messages
                     await channel.updateOverwrite(userIdToAllow, {
                         VIEW_CHANNEL: true,
                         SEND_MESSAGES: true
                     });
 
                     const username = user.username;
-                    // Send a message indicating the channel has been unlocked
-                    await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`.`);
+                    await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`!`);
                 } else {
-                    // Send a message indicating the channel is already unlocked
                     await fetchedMessage.channel.send('This channel is already unlocked.');
                 }
             }
@@ -259,7 +267,7 @@ client.on('message', async msg => {
                 const targetUser = msg.guild.members.cache.get(lockUserId);
 
                 if (!targetUser) {
-                    return msg.channel.send('User not found. Check if the bot is in your server.')
+                    return msg.channel.send('Bot not found. Check if the <@!716390085896962058> is in your server.')
                         .catch(error => console.error('Error sending user not found message or reacting:', error));
                 }
 
@@ -269,11 +277,11 @@ client.on('message', async msg => {
                 });
             }
 
-            const lockMessage = await msg.channel.send(`The channel has been locked. Click on 🔓 to unlock or type \`${prefix}unlock\`.`);
+            const lockMessage = await msg.channel.send(`This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock!`);
             lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
-            return msg.channel.send('Hmm, something prevented me from locking this channel.')
+            return msg.channel.send('Hmm, something prevented me from locking this channel.\nChannel may already be locked.')
                 .catch(error => console.error('Error sending lock error message:', error));
         }
     }
@@ -288,28 +296,25 @@ client.on('message', async msg => {
     let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
 
-    // Define the command and its alias
     if (cmd === "locklist" || cmd === "ll") {
         try {
-            // Retrieve the guild's channels
             const guildChannels = msg.guild.channels.cache;
-            // Filter the locked channels
             const lockedChannels = guildChannels.filter(channel => {
                 const permissions = channel.permissionOverwrites.get(lockUserId);
                 return permissions && permissions.deny.has('VIEW_CHANNEL');
             }).array();
 
-            // Paginate the locked channels into chunks of 20
             const paginatedChannels = chunk(lockedChannels, 20);
 
-            // Create and send an embed for each page
+            const totalLockedChannels = lockedChannels.length;
+
             let currentPage = 0;
             const embed = new MessageEmbed()
-                .setTitle('Locked Channels')
                 .setColor('#008080')
-                .setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}`);
+                .setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}  (${paginatedChannels[currentPage].length} on this page)`);
 
             const sendEmbed = async () => {
+                embed.setTitle(`Locked Channels (${totalLockedChannels})`);
                 embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
                 const sentMessage = await msg.channel.send(embed);
                 if (paginatedChannels.length > 1) {
@@ -324,7 +329,7 @@ client.on('message', async msg => {
                         } else if (reaction.emoji.name === '▶️') {
                             currentPage = (currentPage === paginatedChannels.length - 1) ? 0 : currentPage + 1;
                         }
-                        embed.setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}`);
+                        embed.setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}  (${paginatedChannels[currentPage].length} on this page)`);
                         embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
                         await sentMessage.edit(embed);
                     });

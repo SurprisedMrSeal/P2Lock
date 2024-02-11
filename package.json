@@ -1,6 +1,6 @@
 {
   "name": "p2lock",
-  "version": "1.12.1",
+  "version": "1.12.2",
   "dependencies": {
     "discord.js": "^12.5.3",
     "lodash.chunk": "^4.2.0"
