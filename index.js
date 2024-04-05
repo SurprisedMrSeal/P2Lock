@@ -40,7 +40,7 @@ function getRuntime() {
 //status
 client.on('ready', () => {
     client.user.setPresence({
-        activity: { name: `${prefix}help | ${version}`, type: 'PLAYING' },
+        activity: { name: `${prefix}help | 🔒`, type: 'PLAYING' },
         status: 'idle'
     });
 
@@ -63,7 +63,7 @@ client.on('message', async msg => {
             .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
             .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>`)
             .setColor('#008080')
-            .setFooter(`Version: ${version} | Runtime: ${getRuntime()}`);
+            .setFooter(`Version: ${version} | Uptime: ${getRuntime()}`);
 
         commands.forEach(command => {
             embed.addField(`**${command.name}**`, command.description, false);
@@ -245,7 +245,7 @@ client.on('message', async msg => {
     if (
         (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
         ((msg.content.startsWith('**✨Shiny Hunt Pings:** ')) ||
-        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.includes('Shiny hunt pings: ') || msg.content.includes('Rare ping: ') || msg.content.includes('Regional ping: ')))
+        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.toLowerCase().includes('shiny hunt pings: ') || msg.content.includes('Rare ping: ') || msg.content.includes('Regional ping: ')))
     ) {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
@@ -303,6 +303,13 @@ client.on('message', async msg => {
                 const permissions = channel.permissionOverwrites.get(lockUserId);
                 return permissions && permissions.deny.has('VIEW_CHANNEL');
             }).array();
+
+            if (lockedChannels.length === 0) {
+                return msg.channel.send('There are no locked channels.');
+            }
+
+            // Sort locked channels based on last modification date in descending order
+            lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
 
             const paginatedChannels = chunk(lockedChannels, 20);
 
