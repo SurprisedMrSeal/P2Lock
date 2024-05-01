@@ -1,8 +1,9 @@
 {
   "name": "p2lock",
-  "version": "1.12.3",
+  "version": "1.12.4",
   "dependencies": {
     "discord.js": "^12.5.3",
+    "dotenv": "^16.4.5",
     "lodash.chunk": "^4.2.0"
   },
   "scripts": {

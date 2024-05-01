@@ -1,15 +1,17 @@
 const { Client, Intents, MessageEmbed, ReactionCollector } = require('discord.js');
 const config = require('./config.json');
+require('dotenv').config();
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
 const chunk = require('lodash.chunk');
 const startTime = Date.now();
 
-const token = config.token;
+const token = process.env.token;
 const prefix = config.prefix;
-const BotID = config.BotID;
-const BotRegexp = new RegExp(`<@!?${BotID}>`);
+const P2 = "716390085896962058";
+const Pname = '874910942490677270';
+const embedColor = "#008080";
 
 const client = new Client({
     intents: [
@@ -18,15 +20,6 @@ const client = new Client({
         Intents.FLAGS.MESSAGE_CONTENT,
     ],
 });
-
-const commands = [
-    { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
-    { name: 'ping', description: `Displays the bot\'s latency.\n\`${prefix}ping\`` },
-    { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
-    { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
-    { name: 'pingafk', description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
-    { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
-];
 
 function getRuntime() {
     const currentTime = Date.now();
@@ -44,6 +37,9 @@ client.on('ready', () => {
         status: 'idle'
     });
 
+    BotID = client.user.id;
+    BotRegexp = new RegExp(`<@!?${BotID}>`);
+
     console.log(`${client.user.tag} is online and ready!`);
 });
 
@@ -57,12 +53,20 @@ client.on('message', async msg => {
     let cmd = args.shift();
     if (cmd === "help") {
         const user = msg.member.user;
+        const commands = [
+            { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
+            { name: 'ping', description: `Displays the bot\'s latency.\n\`${prefix}ping\`` },
+            { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
+            { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
+            { name: 'pingafk', description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+            { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
+        ];
 
         const embed = new MessageEmbed()
             .setTitle('Command List')
             .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
             .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>`)
-            .setColor('#008080')
+            .setColor(embedColor)
             .setFooter(`Version: ${version} | Uptime: ${getRuntime()}`);
 
         commands.forEach(command => {
@@ -97,7 +101,6 @@ client.on('message', async msg => {
     let cmd = args.shift();
 
     if ((cmd === "pingafk" || cmd === "pa") && msg.reference) {
-        const Pname = '874910942490677270';
         const referencedMessage = await msg.channel.messages.fetch(msg.reference.messageID).catch(console.error);
 
         if (referencedMessage && referencedMessage.content && referencedMessage.author.id === Pname) {
@@ -132,16 +135,19 @@ client.on('message', async msg => {
     if (msg.author.bot) return;
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
-    const pingUsed = BotRegexp.test(firstArg)
+    const pingUsed = BotRegexp.test(firstArg);
     let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
 
     if (cmd === "lock" || cmd === "l") {
-        const userIdToDeny = "716390085896962058";
 
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
-            const userPermissions = channel.permissionOverwrites.get(userIdToDeny);
+            const userPermissions = channel.permissionOverwrites.get(P2);
+
+            if (userPermissions && userPermissions.deny.has('VIEW_CHANNEL')) {
+                return msg.channel.send('This channel is already locked.');
+            }
 
             if (userPermissions) {
                 await userPermissions.update({
@@ -149,7 +155,7 @@ client.on('message', async msg => {
                     SEND_MESSAGES: false
                 });
             } else {
-                await channel.createOverwrite(userIdToDeny, {
+                await channel.createOverwrite(P2, {
                     VIEW_CHANNEL: false,
                     SEND_MESSAGES: false
                 });
@@ -177,11 +183,10 @@ client.on('message', async msg => {
     let cmd = args.shift();
 
     if (cmd === "unlock" || cmd === "ul" || cmd === "u") {
-        const userIdToAllow = "716390085896962058";
 
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
-            const userPermissions = channel.permissionOverwrites.get(userIdToAllow);
+            const userPermissions = channel.permissionOverwrites.get(P2);
 
             if (userPermissions && !userPermissions.allow.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
                 await userPermissions.update({
@@ -204,8 +209,6 @@ client.on('message', async msg => {
 });
 
 // react to unlock
-const lockUserId = '716390085896962058';
-
 client.on('messageReactionAdd', async (reaction, user) => {
     if (reaction.emoji.name === '🔓' && user.id !== client.user.id) {
         try {
@@ -213,15 +216,14 @@ client.on('messageReactionAdd', async (reaction, user) => {
             const messageId = message.id;
 
             if (message.author.bot && message.content.includes('This channel has been locked')) {
-                const userIdToAllow = "716390085896962058";
                 const channel = message.guild.channels.cache.get(message.channel.id);
 
                 const fetchedMessage = await channel.messages.fetch(messageId);
 
-                const userPermissions = channel.permissionsFor(userIdToAllow);
+                const userPermissions = channel.permissionsFor(P2);
 
                 if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
-                    await channel.updateOverwrite(userIdToAllow, {
+                    await channel.updateOverwrite(P2, {
                         VIEW_CHANNEL: true,
                         SEND_MESSAGES: true
                     });
@@ -250,13 +252,13 @@ client.on('message', async msg => {
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
 
-            const existingPermissions = channel.permissionOverwrites.get(lockUserId);
+            const existingPermissions = channel.permissionOverwrites.get(P2);
 
             if (existingPermissions && existingPermissions.deny.has('VIEW_CHANNEL')) {
                 return;
             }
 
-            const userPermissions = existingPermissions || channel.permissionOverwrites.get(lockUserId);
+            const userPermissions = existingPermissions || channel.permissionOverwrites.get(P2);
 
             if (userPermissions) {
                 await userPermissions.update({
@@ -264,7 +266,7 @@ client.on('message', async msg => {
                     SEND_MESSAGES: false
                 });
             } else {
-                const targetUser = msg.guild.members.cache.get(lockUserId);
+                const targetUser = msg.guild.members.cache.get(P2);
 
                 if (!targetUser) {
                     return msg.channel.send('Bot not found. Check if the <@!716390085896962058> is in your server.')
@@ -300,15 +302,13 @@ client.on('message', async msg => {
         try {
             const guildChannels = msg.guild.channels.cache;
             const lockedChannels = guildChannels.filter(channel => {
-                const permissions = channel.permissionOverwrites.get(lockUserId);
+                const permissions = channel.permissionOverwrites.get(P2);
                 return permissions && permissions.deny.has('VIEW_CHANNEL');
             }).array();
 
             if (lockedChannels.length === 0) {
                 return msg.channel.send('There are no locked channels.');
             }
-
-            // Sort locked channels based on last modification date in descending order
             lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
 
             const paginatedChannels = chunk(lockedChannels, 20);
@@ -317,18 +317,33 @@ client.on('message', async msg => {
 
             let currentPage = 0;
             const embed = new MessageEmbed()
-                .setColor('#008080')
+                .setColor(embedColor)
                 .setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}  (${paginatedChannels[currentPage].length} on this page)`);
 
             const sendEmbed = async () => {
                 embed.setTitle(`Locked Channels (${totalLockedChannels})`);
-                embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
+
+                const channelsGroup1 = paginatedChannels[currentPage].slice(0, 10);
+                const channelsGroup2 = paginatedChannels[currentPage].slice(10, 20);
+
+                const field1Value = channelsGroup1.length > 0 ? channelsGroup1.map(channel => `<#${channel.id}>`).join('\n') : '\u200b';
+                const field2Value = channelsGroup2.length > 0 ? channelsGroup2.map(channel => `<#${channel.id}>`).join('\n') : '\u200b';
+
+                if (channelsGroup1.length > 0) {
+                    embed.addField('\u200b', field1Value, true);
+                }
+
+                if (channelsGroup2.length > 0) {
+                    embed.addField('\u200b', field2Value, true);
+                }
+
                 const sentMessage = await msg.channel.send(embed);
                 if (paginatedChannels.length > 1) {
                     await sentMessage.react('◀️');
                     await sentMessage.react('▶️');
 
-                    const collector = new ReactionCollector(sentMessage, (reaction, user) => ['◀️', '▶️'].includes(reaction.emoji.name) && !user.bot);
+                    const collector = sentMessage.createReactionCollector((reaction, user) => ['◀️', '▶️'].includes(reaction.emoji.name) && !user.bot, { time: 1000 * 60 * 2 });
+
                     collector.on('collect', async (reaction, user) => {
                         await reaction.users.remove(user);
                         if (reaction.emoji.name === '◀️') {
@@ -337,8 +352,26 @@ client.on('message', async msg => {
                             currentPage = (currentPage === paginatedChannels.length - 1) ? 0 : currentPage + 1;
                         }
                         embed.setFooter(`Page ${currentPage + 1}/${paginatedChannels.length}  (${paginatedChannels[currentPage].length} on this page)`);
-                        embed.setDescription(paginatedChannels[currentPage].map(channel => `<#${channel.id}>`).join('\n'));
+
+                        const newChannelsGroup1 = paginatedChannels[currentPage].slice(0, 10);
+                        const newChannelsGroup2 = paginatedChannels[currentPage].slice(10, 20);
+
+                        const newField1Value = newChannelsGroup1.length > 0 ? newChannelsGroup1.map(channel => `<#${channel.id}>`).join('\n') : '\u200b';
+                        const newField2Value = newChannelsGroup2.length > 0 ? newChannelsGroup2.map(channel => `<#${channel.id}>`).join('\n') : '\u200b';
+
+                        embed.fields = [];
+                        if (newChannelsGroup1.length > 0) {
+                            embed.addField('\u200b', newField1Value, true);
+                        }
+                        if (newChannelsGroup2.length > 0) {
+                            embed.addField('\u200b', newField2Value, true);
+                        }
+
                         await sentMessage.edit(embed);
+                    });
+
+                    collector.on('end', () => {
+                        sentMessage.reactions.removeAll().catch(console.error);
                     });
                 }
             };
