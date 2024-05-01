@@ -30,7 +30,7 @@ function getRuntime() {
     return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-//status
+// status
 client.on('ready', () => {
     client.user.setPresence({
         activity: { name: `${prefix}help | 🔒`, type: 'PLAYING' },
@@ -382,6 +382,38 @@ client.on('message', async msg => {
             return msg.channel.send('Hmm, something went wrong while retrieving the locked channels.')
                 .catch(error => console.error('Error sending locklist error message:', error));
         }
+    }
+});
+
+// info
+client.on('message', async msg => {
+    try {
+        if (msg.author.bot) return;
+        const firstArg = msg.content.split(' ')[0];
+        if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
+        const pingUsed = BotRegexp.test(firstArg);
+        let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
+        let cmd = args.shift();
+        
+        if (cmd === "info" || cmd === "invite") {
+            const user = msg.member.user;
+            const embed = new MessageEmbed()
+                .setTitle('Bot Info')
+                .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
+                .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>\nA Bot that automatically(or manually) locks your Shinyhunt, rares and regionals for you!`)
+                .setColor(embedColor)
+                .addFields(
+                    { name: 'Bot Invite', value: '[Link](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)', inline: true },
+                    { name: 'GitHub', value: '[Old](https://github.com/SurprisedMrSeal/P2Lock) , [New](https://github.com/)', inline: true },
+                    { name: 'Support Server', value: '[Link](https://discord.gg/sFszcSvMAp)', inline: true },
+                    { name: 'TOS', value: '[Link](https://p2lock.carrd.co/#tos)', inline: true },
+                    { name: 'Privacy Policy', value: '[Link](https://p2lock.carrd.co/#privacy)', inline: true },
+                )
+                .setFooter(`Version: ${version} | Uptime: ${getRuntime()}`);
+            return msg.channel.send(embed);
+        }
+    } catch (error) {
+        console.error('An error occurred:', error);
     }
 });
 
