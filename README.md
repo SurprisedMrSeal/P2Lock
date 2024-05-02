@@ -1,11 +1,11 @@
 # P2Lock!!
 
-This is a discord bot that Locks your hunts, rares and regionals.
+This is a discord bot that Locks your hunts, rares and regionals and more! (toggleable).
 
 Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
 
 [Bot invite if you wanna add the actual bot](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)
-
+---
 ## Building the bot
 
 - [Go to the discord developer portal](https://discord.com/developers/applications)
@@ -25,7 +25,16 @@ Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
 - open "config.json" and add the values for token, BotID and prefix (you should've copied the bot's ID and token during "Building the bot")
 - Click on "run" or type "npm run bot" in the console!
 
+---
 Congrats you made a locking bot!
 
 - `80% of the code was made by ChatGPT because I have no skill. Thanks for downloading!`
 - `- @mrspheal`
+
+### Links
+- [Bot Invite](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)
+- [GitHub](https://github.com/SurprisedMrSeal/P2Lock)
+- [Support Server](https://discord.com/invite/rvrckpjRVj)
+- [TOS](https://p2lock.carrd.co/#tos)
+- [Privacy Policy](https://p2lock.carrd.co/#privacy)
+---
