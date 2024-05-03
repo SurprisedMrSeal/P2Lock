@@ -1,8 +1,8 @@
 # P2Lock!!
 
-This is a discord bot that Locks your hunts, rares and regionals and more! (toggleable).
+This is a discord bot that Locks your hunts, rares and regionals!
 
-Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
+Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock but -the timers)
 
 [Bot invite if you wanna add the actual bot](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)
 ---
