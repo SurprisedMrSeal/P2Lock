@@ -5,6 +5,7 @@ const uri = process.env.uri;
 const mongoClient = new MongoClient(uri);
 ////
 const DB = "P2Lock";
+const defaultPrefix = ";";
 ////
 async function connectToMongo() {
     try {
@@ -15,31 +16,85 @@ async function connectToMongo() {
     }
 }
 
+// Prefix
 async function getPrefixForServer(guildId) {
     try {
-        const prefixesCollection = mongoClient.db(DB).collection('prefixes');
-        const prefixDocument = await prefixesCollection.findOne({ guildId });
-        return prefixDocument ? prefixDocument.prefix : ';';
+        const configCollection = mongoClient.db(DB).collection('config');
+        const configDocument = await configCollection.findOne({ guildId });
+        return configDocument ? configDocument.prefix || defaultPrefix : defaultPrefix;
     } catch (error) {
         console.error('Error fetching prefix from MongoDB:', error);
-        return ';';
+        return defaultPrefix;
     }
 }
 
 async function updatePrefixForServer(guildId, newPrefix) {
     try {
-        const prefixesCollection = mongoClient.db(DB).collection('prefixes');
+        const configCollection = mongoClient.db(DB).collection('config');
         const filter = { guildId };
         const update = { $set: { prefix: newPrefix } };
         const options = { upsert: true };
-        const result = await prefixesCollection.updateOne(filter, update, options);
-        return result.modifiedCount > 0;
+        const result = await configCollection.updateOne(filter, update, options);
+        return result.modifiedCount > 0 || result.upsertedCount > 0;
     } catch (error) {
         console.error('Error updating prefix in MongoDB:', error);
         return false;
     }
 }
 
+// Delay
+async function getDelay(guildId) {
+    try {
+        const configCollection = mongoClient.db(DB).collection('config');
+        const configDocument = await configCollection.findOne({ guildId });
+        return configDocument ? configDocument.delay || "0" : "0";
+    } catch (error) {
+        console.error('Error fetching delay from MongoDB:', error);
+        return "0";
+    }
+}
+
+async function updateDelay(guildId, newDelay) {
+    try {
+        const configCollection = mongoClient.db(DB).collection('config');
+        const filter = { guildId };
+        const update = { $set: { delay: newDelay } };
+        const options = { upsert: true };
+        const result = await configCollection.updateOne(filter, update, options);
+        return result.modifiedCount > 0 || result.upsertedCount > 0;
+    } catch (error) {
+        console.error('Error updating delay in MongoDB:', error);
+        return false;
+    }
+}
+
+// Timer
+async function getTimer(guildId) {
+    try {
+        const configCollection = mongoClient.db(DB).collection('config');
+        const configDocument = await configCollection.findOne({ guildId });
+        return configDocument ? configDocument.timer || "0" : "0";
+    } catch (error) {
+        console.error('Error fetching timer from MongoDB:', error);
+        return "0";
+    }
+}
+
+async function updateTimer(guildId, newTimer) {
+    try {
+        const configCollection = mongoClient.db(DB).collection('config');
+        const filter = { guildId };
+        const update = { $set: { timer: newTimer } };
+        const options = { upsert: true };
+        const result = await configCollection.updateOne(filter, update, options);
+        return result.modifiedCount > 0 || result.upsertedCount > 0;
+    } catch (error) {
+        console.error('Error updating timer in MongoDB:', error);
+        return false;
+    }
+}
+
+// Toggle
 async function saveToggleableFeatures(guildId, features) {
     try {
         const toggleableCollection = mongoClient.db(DB).collection('toggleable_features');
@@ -80,6 +135,7 @@ function getDefaultToggleableFeatures() {
     };
 }
 
+// Blacklist
 async function saveBlacklistedChannels(guildId, channels) {
     try {
         const database = mongoClient.db(DB);
@@ -117,5 +173,9 @@ module.exports = {
     loadToggleableFeatures,
     getDefaultToggleableFeatures,
     saveBlacklistedChannels,
-    loadBlacklistedChannels
+    loadBlacklistedChannels,
+    getDelay,
+    updateDelay,
+    getTimer,
+    updateTimer
 };
