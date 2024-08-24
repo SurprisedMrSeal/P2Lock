@@ -11,7 +11,7 @@ const prefix = config.prefix;
 const P2 = "716390085896962058";
 const Pname = '874910942490677270';
 const P2a = "854233015475109888";
-const embedColor = "#008080";
+const embedColor = config.color;
 
 const client = new Client({
     intents: [
@@ -30,7 +30,7 @@ function getRuntime() {
     return `${hours}h ${minutes}m ${seconds}s`;
 }
 
-// status
+// status and mention prefix prep \\
 client.on('ready', () => {
     client.user.setPresence({
         activity: { name: `${prefix}help | 🔒`, type: 'PLAYING' },
@@ -43,17 +43,19 @@ client.on('ready', () => {
     console.log(`${client.user.tag} is online and ready!`);
 });
 
-// ## prefix commands ## //
+// ## prefix commands ## \\
 client.on('message', async msg => {
     if (msg.author.bot) return;
     if (msg.channel.type === 'dm') return;
+    if (!msg.channel.permissionsFor(msg.guild.me).has('SEND_MESSAGES')) return;
     const firstArg = msg.content.split(' ')[0];
     if (!BotRegexp.test(firstArg) && !msg.content.startsWith(prefix)) return;
     const pingUsed = BotRegexp.test(firstArg)
     let args = msg.content.toLowerCase().slice(pingUsed ? firstArg.length : prefix.length).trim().split(" ");
     let cmd = args.shift();
-// help
+    // help \\
     if (cmd === "help") {
+        
         const user = msg.member.user;
         const commands = [
             { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
@@ -62,6 +64,9 @@ client.on('message', async msg => {
             { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
             { name: 'pingafk', description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
             { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
+            { name: 'config!', description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config\` \`${prefix}config [] <>\`` },
+            { name: 'toggle!', description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
+            { name: 'blacklist!', description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
             { name: 'info', description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
         ];
 
@@ -118,13 +123,17 @@ client.on('message', async msg => {
             });
         }
     }
-// ping
-  if (cmd == "ping") {
-    const ping = msg.createdTimestamp - Date.now();
+    // ping \\
+    if (cmd == "ping") {
+        const ping = msg.createdTimestamp - Date.now();
         return msg.channel.send(`🏓 **${Math.abs(ping)} ms**.`);
-  }
-// pingafk
-    if ((cmd === "pingafk" || cmd === "pa") && msg.reference) {
+    }
+    // pingafk \\
+    if ((cmd === "pingafk" || cmd === "pa")) {
+        if (!msg.reference) {
+            msg.channel.send(`⚠️ Please reply to a message from <@${Pname}> or <@${P2a}>.`);
+            return;
+        }
         const referencedMessage = await msg.channel.messages.fetch(msg.reference.messageID).catch(console.error);
         //Pname
         if (referencedMessage && referencedMessage.content && referencedMessage.author.id === Pname) {
@@ -132,7 +141,7 @@ client.on('message', async msg => {
             const userIdRegex = /(\d{17,19}) \(AFK\)/g;
             let match;
 
-            const shinyHuntPingsSectionRegex = /\*\*✨Shiny Hunt Pings:\*\*([\s\S]*?)(?=(\*\*|$))/;
+            const shinyHuntPingsSectionRegex = /\*\*✨ Shiny Hunt Pings:\*\*([\s\S]*?)(?=(\*\*|$))/;
             const shinyHuntPingsSection = shinyHuntPingsSectionRegex.exec(referencedMessage.content);
 
             if (shinyHuntPingsSection && shinyHuntPingsSection[1]) {
@@ -177,9 +186,11 @@ client.on('message', async msg => {
             }
         }
     }
-// lock
+    // lock \\
     if (cmd === "lock" || cmd === "l") {
-
+        if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_ROLES')) {
+            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to lock this channel.');
+        }
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
             const userPermissions = channel.permissionOverwrites.get(P2);
@@ -206,13 +217,15 @@ client.on('message', async msg => {
             await lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
-            return msg.channel.send('Hmm, something prevented me from locking this channel.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.')
                 .catch(error => console.error('Error sending lock error message:', error));
         }
     }
-// unlock
+    // unlock \\
     if (cmd === "unlock" || cmd === "ul" || cmd === "u") {
-
+        if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_ROLES')) {
+            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
+        }
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
             const userPermissions = channel.permissionOverwrites.get(P2);
@@ -231,12 +244,13 @@ client.on('message', async msg => {
             }
         } catch (error) {
             console.error('Error in unlock command:', error);
-            return msg.channel.send('Hmm, something prevented me from unlocking this channel.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('Error sending unlock error message:', error));
         }
     }
-// locklist
+    // locklist \\
     if (cmd === "locklist" || cmd === "ll") {
+        
         try {
             const guildChannels = msg.guild.channels.cache;
             const lockedChannels = guildChannels.filter(channel => {
@@ -317,71 +331,45 @@ client.on('message', async msg => {
             sendEmbed();
         } catch (error) {
             console.error('Error in locklist command:', error);
-            return msg.channel.send('Hmm, something went wrong while retrieving the locked channels.')
+            return msg.channel.send('⚠️ Hmm, something went wrong while retrieving the locked channels.')
                 .catch(error => console.error('Error sending locklist error message:', error));
         }
     }
-// info        
-        if (cmd === "info" || cmd === "invite") {
-            const user = msg.member.user;
-            const embed = new MessageEmbed()
-                .setTitle('Bot Info')
-                .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
-                .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>\nA Bot that automatically(or manually) locks your Shinyhunt, rares and regionals for you!`)
-                .setColor(embedColor)
-                .addFields(
-                    { name: 'Bot Invite', value: '[Link](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)', inline: true },
-                    { name: 'GitHub', value: '[Old](https://github.com/SurprisedMrSeal/P2Lock) , [New](https://github.com/SurprisedMrSeal/P2Lock/tree/with-DB)', inline: true },
-                    { name: 'Support Server', value: '[Link](https://discord.gg/sFszcSvMAp)', inline: true },
-                    { name: 'TOS', value: '[Link](https://p2lock.carrd.co/#tos)', inline: true },
-                    { name: 'Privacy Policy', value: '[Link](https://p2lock.carrd.co/#privacy)', inline: true },
-                )
-                .setFooter(`Version: ${version}s | Uptime: ${getRuntime()}`);
-            return msg.channel.send(embed);
+    // info \\     
+    if (cmd === "info" || cmd === "invite") {
+        
+        const user = msg.member.user;
+        const embed = new MessageEmbed()
+            .setTitle('Bot Info')
+            .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
+            .setDescription(`**Prefix:** \`${prefix}\` or <@!${BotID}>\nA Bot that automatically(or manually) locks your Shinyhunt, rares and regionals for you!`)
+            .setColor(embedColor)
+            .addFields(
+                { name: 'Bot Invite', value: '[Link](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)', inline: true },
+                { name: 'GitHub', value: '[Without DB](https://github.com/SurprisedMrSeal/P2Lock) , [With DB](https://github.com/SurprisedMrSeal/P2Lock/tree/with-DB)', inline: true },
+                { name: 'Support Server', value: '[Link](https://discord.gg/sFszcSvMAp)', inline: true },
+                { name: 'TOS', value: '[Link](https://p2lock.carrd.co/#tos)', inline: true },
+                { name: 'Privacy Policy', value: '[Link](https://p2lock.carrd.co/#privacy)', inline: true },
+            )
+            .setFooter(`Version: ${version}s | Uptime: ${getRuntime()}`);
+        return msg.channel.send(embed);
     }
 });
 
-// react to unlock
-client.on('messageReactionAdd', async (reaction, user) => {
-    if (reaction.emoji.name === '🔓' && user.id !== client.user.id) {
-        try {
-            const message = reaction.message;
-            const messageId = message.id;
-
-            if (message.author.bot && message.content.includes('This channel has been locked')) {
-                const channel = message.guild.channels.cache.get(message.channel.id);
-
-                const fetchedMessage = await channel.messages.fetch(messageId);
-
-                const userPermissions = channel.permissionsFor(P2);
-
-                if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
-                    await channel.updateOverwrite(P2, {
-                        VIEW_CHANNEL: true,
-                        SEND_MESSAGES: true
-                    });
-
-                    const username = user.username;
-                    await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`!`);
-                } else {
-                    await fetchedMessage.channel.send('This channel is already unlocked.');
-                }
-            }
-        } catch (error) {
-            console.error('Error in unlock command:', error);
-            return message.channel.send('Hmm, something prevented me from unlocking this channel.')
-                .catch(error => console.error('Error sending unlock error message:', error));
-        }
-    }
-});
-
-// shinyhunt/rare/regional autolock (Poké-Name and P2 Assistant)
+// shinyhunt/rare/regional autolock (Poké-Name and P2 Assistant) \\
 client.on('message', async msg => {
+    if (msg.channel.type === 'dm') return;
     if (
-        (msg.author.id === '874910942490677270' || msg.author.id === '854233015475109888') &&
-        ((msg.content.startsWith('**✨Shiny Hunt Pings:** ')) ||
-        (msg.content.includes('**Rare Ping:** ') || msg.content.includes('**Regional Ping:** ') || msg.content.toLowerCase().includes('shiny hunt pings: ') || msg.content.includes('Rare ping: ') || msg.content.includes('Regional ping: ')))
+        (msg.author.id === Pname || msg.author.id === P2a) && msg.channel.permissionsFor(msg.guild.me).has('SEND_MESSAGES') &&
+        (
+            (msg.content.includes('**✨Shiny Hunt Pings:** ') || msg.content.includes('**✨ Shiny Hunt Pings:** ') || msg.content.toLowerCase().includes('shiny hunt pings: ')) ||
+            (msg.content.includes('**Rare Ping:** ') || msg.content.includes('Rare ping: ')) || 
+            (msg.content.includes('**Regional Ping:** ') || msg.content.includes('Regional ping: '))
+        )
     ) {
+        if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_ROLES')) {
+            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to lock this channel.');
+        }
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
 
@@ -402,7 +390,7 @@ client.on('message', async msg => {
                 const targetUser = msg.guild.members.cache.get(P2);
 
                 if (!targetUser) {
-                    return msg.channel.send('Bot not found. Check if the <@!716390085896962058> is in your server.')
+                    return msg.channel.send('⚠️ Bot not found. Check if the <@!716390085896962058> is in your server.')
                         .catch(error => console.error('Error sending user not found message or reacting:', error));
                 }
 
@@ -416,8 +404,46 @@ client.on('message', async msg => {
             lockMessage.react('🔓');
         } catch (error) {
             console.error('Error in lock command:', error);
-            return msg.channel.send('Hmm, something prevented me from locking this channel.\nChannel may already be locked.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.\nChannel may already be locked.')
                 .catch(error => console.error('Error sending lock error message:', error));
+        }
+    }
+});
+
+// react to unlock \\
+client.on('messageReactionAdd', async (reaction, user) => {
+    const msg = reaction.message;
+    if (msg.channel.type === 'dm') return;
+    if (reaction.emoji.name === '🔓' && user.id !== client.user.id && !user.bot) {
+        try {
+            const messageId = msg.id;
+            if (msg.author.id != BotID) return;
+            if (msg.author.bot && msg.content.includes('This channel has been locked')) {
+                if (!msg.guild.me.hasPermission('MANAGE_ROLES')) {
+                    return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
+                }
+                const channel = msg.guild.channels.cache.get(msg.channel.id);
+
+                const fetchedMessage = await channel.messages.fetch(messageId);
+
+                const userPermissions = channel.permissionsFor(P2);
+
+                if (userPermissions && !userPermissions.has(['VIEW_CHANNEL', 'SEND_MESSAGES'])) {
+                    await channel.updateOverwrite(P2, {
+                        VIEW_CHANNEL: true,
+                        SEND_MESSAGES: true
+                    });
+
+                    const username = user.username;
+                    await fetchedMessage.channel.send(`This channel has been unlocked by \`${username}\`!`);
+                } else {
+                    await fetchedMessage.channel.send('This channel is already unlocked.');
+                }
+            }
+        } catch (error) {
+            console.error('Error in unlock command:', error);
+            return msg.channel.send('⚠️ Hmm, something prevented me from unlocking this channel.')
+                .catch(error => console.error('Error sending unlock error message:', error));
         }
     }
 });
