@@ -57,7 +57,6 @@ client.on('message', async msg => {
     let cmd = args.shift();
     // help \\
     if (cmd === "help") {
-        // if (!msg.channel.permissionsFor(msg.guild.me).has('EMBEDS_LINKS')) return;
         const user = msg.member.user;
 
         const commands = [
@@ -79,7 +78,7 @@ client.on('message', async msg => {
         const embed = new MessageEmbed()
             .setTitle('Command List')
             .setAuthor(user.username, user.displayAvatarURL({ dynamic: true }))
-            .setDescription(`\`<>\` Indicates optional argument.\n\`[]\` Indicates required argument.`)
+            .setDescription(`-# \`<>\` Indicates optional argument.\n-# \`[]\` Indicates required argument.`)
             .setColor(embedColor)
             .setFooter(`Version: ${version} | Uptime: ${getRuntime()}`);
 
@@ -137,10 +136,10 @@ client.on('message', async msg => {
     // lock \\
     if (cmd === "lock" || cmd === "l") {
         if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_ROLES')) {
-            return msg.channel.send('Error: I don\'t have the `Manage Roles` permission to lock this channel.');
+            return msg.channel.send('⚠️Error: I don\'t have the `Manage Roles` permission to lock this channel.');
         }
         if (toggleableFeatures.adminMode && !msg.channel.permissionsFor(msg.member).has('MANAGE_GUILD') && !msg.channel.permissionsFor(msg.member).has('ADMINISTRATOR') && msg.author.id != Seal) {
-            return msg.channel.send('You must have the `Manage Server` permission or `Administrator` to use this command.');
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
@@ -172,17 +171,17 @@ client.on('message', async msg => {
             }
         } catch (error) {
             console.error('(Lock) Error in lock command:', error);
-            return msg.channel.send('Hmm, something prevented me from locking this channel.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.')
                 .catch(error => console.error('(Lock) Error sending lock error message:', error));
         }
     }
     // unlock \\
     if (cmd === "unlock" || cmd === "ul" || cmd === "u") {
         if (!msg.guild.me.hasPermission('MANAGE_ROLES')) {
-            return msg.channel.send('Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
+            return msg.channel.send('⚠️Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
         }
         if (toggleableFeatures.adminMode && !msg.channel.permissionsFor(msg.member).has('MANAGE_GUILD') && !msg.channel.permissionsFor(msg.member).has('ADMINISTRATOR') && msg.author.id != Seal) {
-            return msg.channel.send('You must have the `Manage Server` permission or `Administrator` to use this command.');
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
 
         try {
@@ -203,18 +202,18 @@ client.on('message', async msg => {
             }
         } catch (error) {
             console.error('(Unlock) Error in unlock command:', error);
-            return msg.channel.send('Hmm, something prevented me from unlocking this channel.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('(Unlock) Error sending unlock error message:', error));
         }
     }
     // pingafk \\
     if (cmd === "pingafk" || cmd === "pa") {
         if (!msg.reference) {
-            msg.channel.send(`Please reply to a message from <@${Pname}> or <@${P2a}>.`);
+            msg.channel.send(`⚠️ Please reply to a message from <@${Pname}> or <@${P2a}>.`);
             return;
         }
         if (!toggleableFeatures.pingAfk) {
-            msg.channel.send(`This command is disabled. Please ask your server's staff if you feel it's wrong.`);
+            msg.channel.send(`❌ This command is disabled. Admins can enable it by running \`${prefix}toggle pingafk\``);
             return;
         }
         const referencedMessage = await msg.channel.messages.fetch(msg.reference.messageID).catch(console.error);
@@ -224,7 +223,7 @@ client.on('message', async msg => {
             const userIdRegex = /(\d{17,19}) \(AFK\)/g;
             let match;
 
-            const shinyHuntPingsSectionRegex = /\*\*✨Shiny Hunt Pings:\*\*([\s\S]*?)(?=(\*\*|$))/;
+            const shinyHuntPingsSectionRegex = /\*\*✨ Shiny Hunt Pings:\*\*([\s\S]*?)(?=(\*\*|$))/;
             const shinyHuntPingsSection = shinyHuntPingsSectionRegex.exec(referencedMessage.content);
 
             if (shinyHuntPingsSection && shinyHuntPingsSection[1]) {
@@ -271,7 +270,7 @@ client.on('message', async msg => {
     }
     // locklist \\
     if (cmd === "locklist" || cmd === "ll") {
-        // if (!msg.channel.permissionsFor(msg.guild.me).has('EMBEDS_LINKS')) return;
+        
         try {
             const guildChannels = msg.guild.channels.cache;
             const lockedChannels = guildChannels.filter(channel => {
@@ -361,7 +360,7 @@ client.on('message', async msg => {
         const delay = await getDelay(msg.guild.id);
         const timer = await getTimer(msg.guild.id);
         if (!msg.channel.permissionsFor(msg.member).has('MANAGE_GUILD') && !msg.channel.permissionsFor(msg.member).has('ADMINISTRATOR') && msg.author.id != Seal) {
-            return msg.channel.send('You must have the `Manage Server` permission or `Administrator` to use this command.');
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
     
         if (args.length !== 2) {
@@ -383,44 +382,44 @@ client.on('message', async msg => {
                 })
                 .catch(error => {
                     console.error('(Config) Error updating prefix:', error);
-                    msg.channel.send('An error occurred while updating the prefix.');
+                    msg.channel.send('⚠️ An error occurred while updating the prefix.');
                 });
-        } else if (type === 'delay') {
+        } else if (type === 'delay' || type === 'lockdelay') {
             const newDelay = parseInt(value);
         if (isNaN(newDelay) || newDelay < 0) {
-            return msg.channel.send('Delay must be a `number` greater than `0` seconds.');
+            return msg.channel.send('⚠️ Delay must be a `number` greater than `0` seconds.');
         }
         updateDelay(msg.guild.id, newDelay)
             .then(() => {
-                msg.channel.send(`Delay updated to \`${newDelay}\` seconds.\n||Delay is recommended to be lesser or equal to 10min (600s)||`);
+                msg.channel.send(`Delay updated to \`${newDelay}\` seconds.\n-# ||Delay is recommended to be lesser or equal to 10min (600s)||`);
             })
                 .catch(error => {
                     console.error('(Config) Error updating delay:', error);
-                    msg.channel.send('An error occurred while updating the delay.');
+                    msg.channel.send('⚠️ An error occurred while updating the delay.');
                 });
-        } else if (type === 'timer') {
+        } else if (type === 'timer' || type === 'unlocktimer') {
         const newTimer = parseInt(value);
         if (isNaN(newTimer) || newTimer < 0) {
-            return msg.channel.send('Timer must be a `number` greater than `0` minutes.');
+            return msg.channel.send('⚠️ Timer must be a `number` greater than `0` minutes.');
         }
         updateTimer(msg.guild.id, newTimer)
             .then(() => {
-                msg.channel.send(`Timer updated to \`${newTimer}\` minutes.\n||Timer is recommended to be lesser or equal to 24hrs (1440min).||`);
+                msg.channel.send(`Timer updated to \`${newTimer}\` minutes.\n-# ||Timer is recommended to be lesser or equal to 24hrs (1440min).||`);
             })
             .catch(error => {
                 console.error('(Config) Error updating timer:', error);
-                msg.channel.send('An error occurred while updating the timer.');
+                msg.channel.send('⚠️ An error occurred while updating the timer.');
             });
         } else {
-            msg.channel.send(`Unknown configuration type: \`${type}\`. Use \`${prefix}config <prefix|delay|timer> <value>\`.`);
+            msg.channel.send(`⚠️ Unknown configuration type: \`${type}\`. Use \`${prefix}config <prefix|delay|timer> <value>\`.`);
         }
     }
     // toggle \\
     if (cmd === 'toggle') {
         if (!msg.channel.permissionsFor(msg.member).has('MANAGE_GUILD') && !msg.channel.permissionsFor(msg.member).has('ADMINISTRATOR') && msg.author.id != Seal) {
-            return msg.channel.send('You must have the `Manage Server` permission or `Administrator` to use this command.');
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
-        // if (!msg.channel.permissionsFor(msg.guild.me).has('EMBEDS_LINKS')) return;
+        
         const toggleType = args[0] ? args[0].toLowerCase() : null;
 
         switch ((toggleType || '').toLowerCase()) {
@@ -497,13 +496,13 @@ client.on('message', async msg => {
 
                     for (const featureName in featureDisplayName) {
                         const displayName = featureDisplayName[featureName];
-                        const featureState = toggleableFeatures[featureName] ? 'On' : 'Off';
+                        const featureState = toggleableFeatures[featureName] ? '🟩 On' : '⬛ Off';
                         embed.addField(displayName, featureState);
                     }
 
                     msg.channel.send(embed);
                 } else {
-                    msg.channel.send(`Invalid toggle option. Please use \`${prefix}toggle\` followed by a valid option.`);
+                    msg.channel.send(`⚠️ Invalid toggle option. Please use \`${prefix}toggle\` followed by a valid option.`);
                 }
                 break;
         }
@@ -512,9 +511,9 @@ client.on('message', async msg => {
     }
     // blacklist \\
     if (cmd === "blacklist" || cmd === "bl") {
-        // if (!msg.channel.permissionsFor(msg.guild.me).has('EMBEDS_LINKS')) return;
+        
         if (!msg.channel.permissionsFor(msg.member).has('MANAGE_GUILD') && !msg.channel.permissionsFor(msg.member).has('ADMINISTRATOR') && msg.author.id != Seal) {
-            return msg.channel.send('You must have the `Manage Server` permission or `Administrator` to use this command.');
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
     
         const channels = [];
@@ -596,7 +595,6 @@ client.on('message', async msg => {
     }    
     // info \\
     if (cmd === "info" || cmd === "invite") {
-        // if (!msg.channel.permissionsFor(msg.guild.me).has('EMBEDS_LINKS')) return;
         const user = msg.member.user;
         const embed = new MessageEmbed()
             .setTitle('Bot Info')
@@ -605,7 +603,7 @@ client.on('message', async msg => {
             .setColor(embedColor)
             .addFields(
                 { name: 'Bot Invite', value: '[Link](https://discord.com/oauth2/authorize?client_id=806723110761136169&permissions=67696&scope=bot)', inline: true },
-                { name: 'GitHub', value: '[Old](https://github.com/SurprisedMrSeal/P2Lock) , [New](https://github.com/SurprisedMrSeal/P2Lock/tree/with-DB)', inline: true },
+                { name: 'GitHub', value: '[Without DB](https://github.com/SurprisedMrSeal/P2Lock) , [With DB](https://github.com/SurprisedMrSeal/P2Lock/tree/with-DB)', inline: true },
                 { name: 'Support Server', value: '[Link](https://discord.gg/sFszcSvMAp)', inline: true },
                 { name: 'TOS', value: '[Link](https://p2lock.carrd.co/#tos)', inline: true },
                 { name: 'Privacy Policy', value: '[Link](https://p2lock.carrd.co/#privacy)', inline: true },
@@ -621,21 +619,24 @@ client.on('message', async msg => {
     const prefix = await getPrefixForServer(msg.guild.id);
     const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
     const blacklistedChannels = await loadBlacklistedChannels(msg.guild.id);
+    const delay = await getDelay(msg.guild.id);
+    const timer = await getTimer(msg.guild.id);
     if (blacklistedChannels.includes(msg.channel.id)) return;
     // Auto Lock \\
     if ((msg.author.id === Pname || msg.author.id === P2a || msg.author.id === Seal) && 
     msg.channel.permissionsFor(msg.guild.me).has('SEND_MESSAGES') &&
         (
-            (toggleableFeatures.includeShinyHuntPings && (msg.content.startsWith('**✨Shiny Hunt Pings:** ') || msg.content.includes('Shiny hunt pings: '))) ||
+            (toggleableFeatures.includeShinyHuntPings && (msg.content.includes('**✨Shiny Hunt Pings:** ') || msg.content.includes('**✨ Shiny Hunt Pings:** ') || msg.content.includes('Shiny hunt pings: '))) ||
             (toggleableFeatures.includeRarePings && (msg.content.includes('**Rare Ping:** ') || msg.content.includes('Rare ping: '))) ||
             (toggleableFeatures.includeRegionalPings && (msg.content.includes('**Regional Ping:** ') || msg.content.includes('Regional ping: '))) ||
-            (toggleableFeatures.includeCollectionPings && (msg.content.includes('**Collection Pings:** ') || msg.content.includes('Collection pings: '))) ||
+            (toggleableFeatures.includeCollectionPings && (msg.content.toLowerCase().includes('collection pings: '))) ||
             (toggleableFeatures.includeQuestPings && (msg.content.includes('**Quest Pings:** ') || msg.content.includes('Quest pings: '))) ||
             (toggleableFeatures.includeTypePings && msg.content.includes('Type pings: '))
         )
     ) {
+        if (!msg.channel.permissionsFor(msg.guild.me).has('SEND_MESSAGES')) return;
         if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_ROLES')) {
-            return msg.channel.send('Error: I don\'t have the `Manage Roles` permission to lock this channel.');
+            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to lock this channel.');
         }
         try {
             const channel = msg.guild.channels.cache.get(msg.channel.id);
@@ -656,7 +657,7 @@ client.on('message', async msg => {
                 const targetUser = msg.guild.members.cache.get(P2);
 
                 if (!targetUser) {
-                    return msg.channel.send('Bot not found. Check if <@!716390085896962058> is in your server.')
+                    return msg.channel.send('⚠️ Bot not found. Check if <@!716390085896962058> is in your server.')
                         .catch(error => console.error('(AutoLock) Error sending user not found message or reacting:', error));
                 }
 
@@ -674,7 +675,7 @@ client.on('message', async msg => {
             }
         } catch (error) {
             console.error('(AutoLock) Error in lock command:', error);
-            return msg.channel.send('Hmm, something prevented me from locking this channel.\nChannel may already be locked.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.\nChannel may already be locked.')
                 .catch(error => console.error('(AutoLock) Error sending lock error message:', error));
         }
     }
@@ -683,7 +684,7 @@ client.on('message', async msg => {
         if (!toggleableFeatures.autoPin) return;
 
         if (!msg.channel.permissionsFor(msg.guild.me).has('MANAGE_MESSAGES')) {
-            return msg.channel.send(`Error: I don't have the \`Manage Messages\` permission to pin this message.\nYou can run \`${prefix}toggle AutoPin\` to stop this.`);
+            return msg.channel.send(`⚠️ Error: I don't have the \`Manage Messages\` permission to pin this message.\nYou can run \`${prefix}toggle AutoPin\` to stop this.`);
         }
         msg.react("<:tada_008080:1234911189268693002>")
             .then(() => {
@@ -699,13 +700,12 @@ client.on('messageReactionAdd', async (reaction, user) => {
     const msg = reaction.message;
     if (msg.channel.type === 'dm') return;
     if (reaction.emoji.name === '🔓' && user.id !== client.user.id && !user.bot) {
-        try {
-            
+        try {            
             const messageId = msg.id;
-
+            if (msg.author.id != BotID) return;
             if (msg.author.bot && msg.content.startsWith('This channel has been locked') && msg.content.includes('Click on')) {
                 if (!msg.guild.me.hasPermission('MANAGE_ROLES')) {
-                    return msg.channel.send('Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
+                    return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
                 }
                 const channel = msg.guild.channels.cache.get(msg.channel.id);
 
@@ -727,7 +727,7 @@ client.on('messageReactionAdd', async (reaction, user) => {
             }
         } catch (error) {
             console.error('(React to Unlock) Error in unlock command:', error);
-            return msg.channel.send('Hmm, something prevented me from unlocking this channel.')
+            return msg.channel.send('⚠️ Hmm, something prevented me from unlocking this channel.')
                 .catch(error => console.error('(React to Unlock) Error sending unlock error message:', error));
         }
     }
