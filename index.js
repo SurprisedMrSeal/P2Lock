@@ -213,7 +213,7 @@ client.on('message', async msg => {
             return;
         }
         if (!toggleableFeatures.pingAfk) {
-            msg.channel.send(`❌ This command is disabled. Admins can enable it by running \`${prefix}toggle pingafk\``);
+            msg.channel.send(`❌ This command is disabled. Admins can enable it by running \`${prefix}toggle pingafk\`.`);
             return;
         }
         const referencedMessage = await msg.channel.messages.fetch(msg.reference.messageID).catch(console.error);
@@ -427,53 +427,53 @@ client.on('message', async msg => {
             case 'shiny lock':
             case 'sh':
                 toggleableFeatures.includeShinyHuntPings = !toggleableFeatures.includeShinyHuntPings;
-                msg.channel.send(`**Shiny Hunt Lock** toggled ${toggleableFeatures.includeShinyHuntPings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeShinyHuntPings ? '🟩' : '⬛'} **Shiny Hunt Lock** toggled ${toggleableFeatures.includeShinyHuntPings ? 'on' : 'off'}.`);
                 break;
             case 'rare':
             case 'rare lock':
             case 'r':
                 toggleableFeatures.includeRarePings = !toggleableFeatures.includeRarePings;
-                msg.channel.send(`**Rare Lock** toggled ${toggleableFeatures.includeRarePings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeRarePings ? '🟩' : '⬛'} **Rare Lock** toggled ${toggleableFeatures.includeRarePings ? 'on' : 'off'}.`);
                 break;
             case 'regional':
             case 'regional lock':
             case 're':
                 toggleableFeatures.includeRegionalPings = !toggleableFeatures.includeRegionalPings;
-                msg.channel.send(`**Regional Lock** toggled ${toggleableFeatures.includeRegionalPings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeRegionalPings ? '🟩' : '⬛'} **Regional Lock** toggled ${toggleableFeatures.includeRegionalPings ? 'on' : 'off'}.`);
                 break;
             case 'collection':
             case 'collection lock':
             case 'col':
             case 'cl':
                 toggleableFeatures.includeCollectionPings = !toggleableFeatures.includeCollectionPings;
-                msg.channel.send(`**Collection Lock** toggled ${toggleableFeatures.includeCollectionPings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeCollectionPings ? '🟩' : '⬛'} **Collection Lock** toggled ${toggleableFeatures.includeCollectionPings ? 'on' : 'off'}.`);
                 break;
             case 'quest':
             case 'quest lock':
             case 'q':
                 toggleableFeatures.includeQuestPings = !toggleableFeatures.includeQuestPings;
-                msg.channel.send(`**Quest Lock**  toggled ${toggleableFeatures.includeQuestPings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeQuestPings ? '🟩' : '⬛'} **Quest Lock**  toggled ${toggleableFeatures.includeQuestPings ? 'on' : 'off'}.`);
                 break;
             case 'type':
             case 'type lock':
             case 't':
                 toggleableFeatures.includeTypePings = !toggleableFeatures.includeTypePings;
-                msg.channel.send(`**Type Lock** toggled ${toggleableFeatures.includeTypePings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeTypePings ? '🟩' : '⬛'} **Type Lock** toggled ${toggleableFeatures.includeTypePings ? 'on' : 'off'}.`);
                 break;
             case 'pingafk':
             case 'pa':
                 toggleableFeatures.pingAfk = !toggleableFeatures.pingAfk;
-                msg.channel.send(`**PingAfk** toggled ${toggleableFeatures.pingAfk ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.pingAfk ? '🟩' : '⬛'} **PingAfk** toggled ${toggleableFeatures.pingAfk ? 'on' : 'off'}.`);
                 break;
             case 'autopin':
             case 'pin':
                 toggleableFeatures.autoPin = !toggleableFeatures.autoPin;
-                msg.channel.send(`**AutoPin** toggled ${toggleableFeatures.autoPin ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.autoPin ? '🟩' : '⬛'} **AutoPin** toggled ${toggleableFeatures.autoPin ? 'on' : 'off'}.`);
                 break;
             case 'adminmode':
             case 'admin':
                 toggleableFeatures.adminMode = !toggleableFeatures.adminMode;
-                msg.channel.send(`**AdminMode** toggled ${toggleableFeatures.adminMode ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.adminMode ? '🟩' : '⬛'} **AdminMode** toggled ${toggleableFeatures.adminMode ? 'on' : 'off'}.`);
                 break;
             default:
                 if (args.length === 0) {
