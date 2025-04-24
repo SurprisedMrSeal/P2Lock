@@ -19,20 +19,20 @@ Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
 
 ## Making the bot alive
 
-- Download all the files (License and README unnecessary) and put them wherever you're hosting the bot
-(If you're hosting it on your device, you'll need to download [Node.js](https://nodejs.org/))
-- You will probably need to run "npm i discord.js@v12" in the terminal if you're hosting it locally
-- open "config.json" and add the values for token, BotID and prefix (you should've copied the bot's ID and token during "Building the bot")
+- Download all the files and put them wherever you're hosting the bot.
+(If you're hosting it on your device, you'll need to download [Node.js](https://nodejs.org/)).
+- You will probably need to run "npm i discord.js" in the terminal if you're hosting it locally.
 - Click on "run" or type "npm run bot" in the console!
+- You may change the ID "Seal" in utils.js to your ID to help with testing.
 
 ## Mongo
 
-This lets you use configurable features without having to store the information wherever you're hosting it. If you're not going to be using these features (toggling some features, changing prefixes etc.) You can use the [Main branch](https://github.com/SurprisedMrSeal/P2Lock) if you won't be using these features.
+This lets you use configurable features without having to store the information wherever you're hosting it. If you're not going to be using these features (toggling some features, changing prefixes etc.) You can check out the mongo-less version ['without-DB (1.14.3)'](https://github.com/SurprisedMrSeal/P2Lock/tree/without-DB-(1.14.3)) (This is an old version and may/may not be be updated in the future).
 
-- You will need to create a database in Mongo and name it P2Lock (can change it if you update mongoUtils.js)
-- create two collections called 'prefixes' and 'toggleable_features' respectively
+- You will need to create a database in Mongo and name it P2Lock (can change it if you change it in mongoUtils.js too (const DB = ))
+- create the collections 'blacklisted_channels', 'config', and 'toggleable_features'
 - copy your uri and paste it in the .env file
-- allow your ip or the ip of the place you're hosting from
+- allow your ip or the ip of the place you're hosting from if needed
 ---
 Congrats you made a locking bot!
 
