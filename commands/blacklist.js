@@ -6,7 +6,7 @@ const { Seal, embedColor } = require('../utils');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blacklist')
-        .setDescription('Manage channel blacklist')
+        .setDescription('Manage channel blacklist.')
         .addSubcommand(sub => sub.setName('add').setDescription('Add a channel to the blacklist.')
             .addChannelOption(opt => opt.setName('channel').setDescription('Channel to add.').setRequired(true)))
         .addSubcommand(sub => sub.setName('remove').setDescription('Remove a channel from the blacklist.')
@@ -55,7 +55,7 @@ module.exports = {
                 }
             }
             await saveBlacklistedChannels(msg.guild.id, blacklisted);
-            return msg.channel.send(added.length ? `Added: ${added.join(' ')} to the blacklist` : 'No new channels were added.');
+            return msg.channel.send(added.length ? `Added: ${added.join(' ')} to the blacklist!` : 'No new channels were added.');
         }
         // REMOVE
         if (sub === 'remove' || sub === 'r') {
@@ -69,7 +69,7 @@ module.exports = {
                 }
             }
             await saveBlacklistedChannels(msg.guild.id, blacklisted);
-            return msg.channel.send(removed.length ? `Removed: ${removed.join(' ')} to the blacklist.` : 'No channels were removed.');
+            return msg.channel.send(removed.length ? `Removed: ${removed.join(' ')} from the blacklist!` : 'No channels were removed.');
         }
         // CLEAR
         if (sub === 'clear' || sub === 'c') {
@@ -126,7 +126,7 @@ module.exports = {
     async executeInteraction(interaction, client) {
         // permissions
         if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id !== Seal) {
-            return interaction.reply({ content: '❌ You must have the `Manage Server` or `Administrator` permission to use this command.', flags: InteractionResponseFlags.Ephemeral });
+            return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: InteractionResponseFlags.Ephemeral });
         }
         const guildId = interaction.guild.id;
         const cmd = interaction.options.getSubcommand();
@@ -139,7 +139,7 @@ module.exports = {
             }
             blacklisted.push(id);
             await saveBlacklistedChannels(guildId, blacklisted);
-            return interaction.reply({ content: `Added <#${id}> to the blacklist.` });
+            return interaction.reply({ content: `Added <#${id}> to the blacklist!` });
         } else if (cmd === 'remove') {
             const channel = interaction.options.getChannel('channel');
             const id = channel.id;
@@ -148,7 +148,7 @@ module.exports = {
             }
             blacklisted = blacklisted.filter(ch => ch !== id);
             await saveBlacklistedChannels(guildId, blacklisted);
-            return interaction.reply({ content: `Removed <#${id}> from the blacklist.` });
+            return interaction.reply({ content: `Removed <#${id}> from the blacklist!` });
         } else if (cmd === 'list') {
             if (blacklisted.length === 0) {
                 return interaction.reply({ content: 'There are no blacklisted channels.' });
