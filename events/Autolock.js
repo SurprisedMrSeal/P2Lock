@@ -1,5 +1,6 @@
+//v2.2.2
 const { P2, Pname, P2a, Seal } = require('../utils');
-const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer } = require('../mongoUtils');
+const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock } = require('../mongoUtils');
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
@@ -32,6 +33,7 @@ module.exports = {
                 const timerMinutes = await getTimer(msg.guild.id);
                 
                 let warningMessage = null;
+                let shouldCancel = false;
                 
                 // If delay is set, send a warning with a live timestamp
                 if (delaySeconds > 0) {
@@ -41,6 +43,22 @@ module.exports = {
                     // Send the initial warning with a relative timestamp that updates automatically
                     warningMessage = await msg.channel.send(`⏳ This channel will be locked <t:${lockTime}:R>`);
                     
+                    // Create a collector to listen for "Congratulations" messages during the delay period
+                    const filter = m => m.author.id === P2 
+                    //&& (m.content.startsWith("Congratulations ") && m.content.includes("You caught a Level"))
+                    ;
+                    
+                    const collector = msg.channel.createMessageCollector({ 
+                        filter, 
+                        time: delaySeconds * 1000 
+                    });
+                    
+                    collector.on('collect', async () => {
+                        shouldCancel = true;
+                        collector.stop();
+                        await warningMessage.edit(`⌛ This channel will be locked i- cancelled.`);
+                    });
+                    
                     // Wait for the configured delay, but check every second if the channel is already locked
                     const checkInterval = 1000; // Check every second
                     const iterations = delaySeconds;
@@ -48,17 +66,23 @@ module.exports = {
                     for (let i = 0; i < iterations; i++) {
                         await new Promise(resolve => setTimeout(resolve, checkInterval));
                         
+                        // If we should cancel, exit early
+                        if (shouldCancel) return;
+                        
                         // Check if the channel is already locked by another bot
                         const targetMember = await msg.guild.members.fetch(P2);
                         const currentOverwrite = msg.channel.permissionOverwrites.cache.get(targetMember.id);
                         
                         if (currentOverwrite && (currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) || 
                                                 currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                            // Channel is already locked, update the message and exit
-                            await warningMessage.edit(`⌛ The channel is already locked.`);
+                            // Channel is already locked, delete the message and exit
+                            await warningMessage.delete();
                             return;
                         }
                     }
+                    
+                    // Check again if we should cancel
+                    if (shouldCancel) return;
                 }
                 
                 const channel = msg.channel;
@@ -82,16 +106,25 @@ module.exports = {
 
                 // Prepare content for lock message based on timer settings
                 let lockContent = '';
-                let unlockTime = null;
                 
                 if (timerMinutes > 0) {
                     // Calculate when the channel will be automatically unlocked
-                    unlockTime = Math.floor(Date.now() / 1000) + (timerMinutes * 60);
+                    const currentTime = Math.floor(Date.now() / 1000);
+                    const unlockTime = currentTime + (timerMinutes * 60);
+                    
+                    // Save the active lock to the database
+                    await saveActiveLock(
+                        msg.guild.id,
+                        msg.channel.id,
+                        targetMember.id,
+                        currentTime,
+                        unlockTime
+                    );
                     
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `⌛ This channel has been locked. Ask an admin to unlock this channel.`;
+                        lockContent = `⏳ This channel has been locked. Ask an admin to unlock this channel.`;
                     } else {
-                        lockContent = `⌛ This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.`;
+                        lockContent = `⏳ This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.`;
                     }
                 } else {
                     if (toggleableFeatures.adminMode) {
@@ -146,18 +179,34 @@ module.exports = {
                     
                     setTimeout(async () => {
                         try {
-                            // Check if the channel still exists and is still locked
+                            // Check if the channel still exists
                             const channel = msg.channel;
-                            if (!channel) return; // Channel was deleted
+                            if (!channel) {
+                                // Channel was deleted, remove from database
+                                await removeActiveLock(msg.guild.id, msg.channel.id);
+                                return;
+                            }
+                            
+                            // Check if this lock is still active in the database
+                            const activeLock = await getActiveLock(msg.guild.id, channel.id);
+                            if (!activeLock) {
+                                // Lock was already removed from database (manually unlocked)
+                                return;
+                            }
                             
                             const targetMember = await msg.guild.members.fetch(P2).catch(() => null);
-                            if (!targetMember) return; // Member no longer in server
+                            if (!targetMember) {
+                                // Member no longer in server, remove from database
+                                await removeActiveLock(msg.guild.id, channel.id);
+                                return;
+                            }
                             
                             const currentOverwrite = channel.permissionOverwrites.cache.get(targetMember.id);
                             if (!currentOverwrite || 
                                 (!currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) && 
                                  !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                                // Channel is already unlocked
+                                // Channel is already unlocked, remove from database
+                                await removeActiveLock(msg.guild.id, channel.id);
                                 return;
                             }
                             
@@ -167,8 +216,13 @@ module.exports = {
                             // Send a notification about the auto-unlock
                             await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
                             
+                            // Remove the lock from the database
+                            await removeActiveLock(msg.guild.id, channel.id);
+                            
                         } catch (error) {
                             console.error('(AutoUnlock) Error in auto-unlock:', error);
+                            // Still try to remove from database even on error
+                            await removeActiveLock(msg.guild.id, msg.channel.id);
                         }
                     }, unlockDelay);
                 }

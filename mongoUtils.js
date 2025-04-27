@@ -1,3 +1,4 @@
+//v2.2.2
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
@@ -11,6 +12,7 @@ async function connectToMongo() {
     try {
         await mongoClient.connect();
         console.log('Connected to MongoDB Atlas');
+        await setupTTLIndex();
     } catch (error) {
         console.error('Error connecting to MongoDB Atlas:', error);
     }
@@ -165,6 +167,71 @@ async function loadBlacklistedChannels(guildId) {
     }
 }
 
+// Active Locks
+async function saveActiveLock(guildId, channelId, targetId, lockTime, unlockTime) {
+    try {
+        const locksCollection = mongoClient.db(DB).collection('active_locks');
+        const filter = { guildId, channelId };
+        const update = { 
+            $set: { 
+                guildId,
+                channelId,
+                targetId,
+                lockTime,
+                unlockTime
+            } 
+        };
+        const options = { upsert: true };
+        const result = await locksCollection.updateOne(filter, update, options);
+        return result.modifiedCount > 0 || result.upsertedCount > 0;
+    } catch (error) {
+        console.error('Error saving active lock to MongoDB:', error);
+        return false;
+    }
+}
+
+async function removeActiveLock(guildId, channelId) {
+    try {
+        const locksCollection = mongoClient.db(DB).collection('active_locks');
+        const result = await locksCollection.deleteOne({ guildId, channelId });
+        return result.deletedCount > 0;
+    } catch (error) {
+        console.error('Error removing active lock from MongoDB:', error);
+        return false;
+    }
+}
+
+async function getActiveLocks() {
+    try {
+        const locksCollection = mongoClient.db(DB).collection('active_locks');
+        return await locksCollection.find({}).toArray();
+    } catch (error) {
+        console.error('Error fetching active locks from MongoDB:', error);
+        return [];
+    }
+}
+
+async function getActiveLock(guildId, channelId) {
+    try {
+        const locksCollection = mongoClient.db(DB).collection('active_locks');
+        return await locksCollection.findOne({ guildId, channelId });
+    } catch (error) {
+        console.error('Error fetching active lock from MongoDB:', error);
+        return null;
+    }
+}
+
+async function setupTTLIndex() {
+    try {
+        const locksCollection = mongoClient.db(DB).collection('active_locks');
+        // Create a TTL index on lockTime field that expires after 7 days (604800 seconds)
+        await locksCollection.createIndex({ "lockTime": 1 }, { expireAfterSeconds: 604800 });
+        //console.log('TTL index for active_locks collection created successfully');
+    } catch (error) {
+        console.error('Error creating TTL index:', error);
+    }
+}
+
 module.exports = {
     connectToMongo,
     getPrefixForServer,
@@ -177,5 +244,9 @@ module.exports = {
     getDelay,
     updateDelay,
     getTimer,
-    updateTimer
+    updateTimer,
+    saveActiveLock,
+    removeActiveLock,
+    getActiveLocks,
+    getActiveLock
 };
