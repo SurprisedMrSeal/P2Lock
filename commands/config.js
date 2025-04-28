@@ -1,3 +1,4 @@
+//v2.2.3
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
 const { getDelay, getTimer, updatePrefixForServer, updateDelay, updateTimer, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
@@ -58,22 +59,22 @@ module.exports = {
                 });
         } else if (type === 'delay' || type === 'lockdelay') {
             const newDelay = parseInt(value);
-            if (isNaN(newDelay) || newDelay < 0) {
-                return msg.channel.send('❕ Delay must be a `number` greater than `0` seconds.');
+            if (isNaN(newDelay) || newDelay < 0 || newDelay > 600) {
+                return msg.channel.send('❕ Must be a `number` between `0` and `600` seconds.');
             }
             updateDelay(msg.guild.id, newDelay)
-                .then(() => msg.channel.send(`Delay updated to \`${newDelay}\` seconds.\n-# ||Delay is recommended to be lesser or equal to 10min (600s)||`))
+                .then(() => msg.channel.send(`LockDelay updated to \`${newDelay}\` seconds.`))
                 .catch(error => {
                     console.error('(Config) Error updating delay:', error);
                     msg.channel.send('⚠️ An error occurred while updating the delay.');
                 });
         } else if (type === 'timer' || type === 'unlocktimer') {
             const newTimer = parseInt(value);
-            if (isNaN(newTimer) || newTimer < 0) {
-                return msg.channel.send('❕ Timer must be a `number` greater than `0` minutes.');
+            if (isNaN(newTimer) || newTimer < 0 || newTimer > 1440) {
+                return msg.channel.send('❕ Must be a `number` between `0` and `1440` minutes.');
             }
             updateTimer(msg.guild.id, newTimer)
-                .then(() => msg.channel.send(`Timer updated to \`${newTimer}\` minutes.\n-# ||Timer is recommended to be lesser or equal to 24hrs (1440min).||`))
+                .then(() => msg.channel.send(`UnlockTimer updated to \`${newTimer}\` minutes.\n\n❕By Setting an UnlockTimer, you acknowledge that channel details from this server will be stored for up to 48hrs before being automatically deleted. If you object, set the value to \`0\`❕`))
                 .catch(error => {
                     console.error('(Config) Error updating timer:', error);
                     msg.channel.send('⚠️ An error occurred while updating the timer.');
@@ -134,18 +135,18 @@ module.exports = {
                 return interaction.editReply({ content: `Prefix updated to \`${value}\`` });
             } else if (type === 'delay') {
                 const newDelay = parseInt(value);
-                if (isNaN(newDelay) || newDelay < 0) {
-                    return interaction.editReply({ content: '❕ Delay must be a number ≥ 0.' });
+                if (isNaN(newDelay) || newDelay < 0 || newDelay > 600) {
+                    return interaction.editReply({ content: '❕ Must be a `number` between `0` and `600` seconds.' });
                 }
                 await updateDelay(interaction.guild.id, newDelay);
-                return interaction.editReply({ content: `Lock delay updated to \`${newDelay}\` seconds.` });
+                return interaction.editReply({ content: `LockDelay updated to \`${newDelay}\` seconds.` });
             } else if (type === 'unlocktimer') {
                 const newTimer = parseInt(value);
-                if (isNaN(newTimer) || newTimer < 0) {
-                    return interaction.editReply({ content: '❕ Timer must be a number ≥ 0.' });
+                if (isNaN(newTimer) || newTimer < 0 || newTimer > 1440) {
+                    return interaction.editReply({ content: '❕ Must be a `number` between `0` and `1440` minutes.' });
                 }
                 await updateTimer(interaction.guild.id, newTimer);
-                return interaction.editReply({ content: `Unlock timer updated to \`${newTimer}\` minutes.` });
+                return interaction.editReply({ content: `UnlockTimer updated to \`${newTimer}\` minutes.\n\n❕By Setting an UnlockTimer, you acknowledge that channel details from this server will be stored for up to 48hrs before being automatically deleted. If you object, set the value to \`0\`❕` });
             } else {
                 return interaction.editReply({ content: '❕ Invalid configuration type.' });
             }

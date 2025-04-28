@@ -1,4 +1,4 @@
-//v2.2.2
+//v2.2.3
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
@@ -224,9 +224,8 @@ async function getActiveLock(guildId, channelId) {
 async function setupTTLIndex() {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        // Create a TTL index on lockTime field that expires after 7 days (604800 seconds)
-        await locksCollection.createIndex({ "lockTime": 1 }, { expireAfterSeconds: 604800 });
-        //console.log('TTL index for active_locks collection created successfully');
+        //await locksCollection.dropIndex("lockTime_1"); //uncomment if you change the expiration date
+        await locksCollection.createIndex({ "lockTime": 1 }, { expireAfterSeconds: 172800 }); //48 hrs
     } catch (error) {
         console.error('Error creating TTL index:', error);
     }
