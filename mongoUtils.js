@@ -1,7 +1,7 @@
-//v2.4.0
+//v2.4.1
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
-const { prefix } = require('../utils');
+const { prefix } = require('./utils');
 
 const uri = process.env.uri;
 const mongoClient = new MongoClient(uri);
