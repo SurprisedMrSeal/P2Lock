@@ -1,3 +1,4 @@
+//v2.4.0
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
@@ -5,7 +6,10 @@ const version = packageJson.version;
 const P2 = "716390085896962058";
 const Pname = "874910942490677270";
 const P2a = "854233015475109888";
+
 const Seal = "590572827485405194";
+
+const prefix = ";";
 const embedColor = "#008080";
 
 const startTime = Date.now();
@@ -24,6 +28,7 @@ module.exports = {
     Pname,
     P2a,
     Seal,
+    prefix,
     embedColor,
     version,
     getRuntime

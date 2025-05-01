@@ -1,12 +1,13 @@
-//v2.2.3
+//v2.4.0
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
+const { prefix } = require('../utils');
 
 const uri = process.env.uri;
 const mongoClient = new MongoClient(uri);
 ////
 const DB = "P2Lock";
-const defaultPrefix = ";";
+const defaultPrefix = prefix;
 ////
 async function connectToMongo() {
     try {
@@ -129,6 +130,7 @@ function getDefaultToggleableFeatures() {
         includeRarePings: true,
         includeRegionalPings: true,
         includeCollectionPings: false,
+        includeEventPings: false,
         includeQuestPings: false,
         includeTypePings: false,
         pingAfk: true,
@@ -168,7 +170,7 @@ async function loadBlacklistedChannels(guildId) {
 }
 
 // Active Locks
-async function saveActiveLock(guildId, channelId, targetId, lockTime, unlockTime) {
+async function saveActiveLock(guildId, channelId, lockTime, unlockTime) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
         const filter = { guildId, channelId };
@@ -176,7 +178,6 @@ async function saveActiveLock(guildId, channelId, targetId, lockTime, unlockTime
             $set: { 
                 guildId,
                 channelId,
-                targetId,
                 lockTime,
                 unlockTime
             } 
@@ -231,6 +232,32 @@ async function setupTTLIndex() {
     }
 }
 
+// Event mon list
+async function saveEventList(mon) {
+    try {
+        const collection = mongoClient.db(DB).collection('event_list');
+        const filter = { _id: "list" };
+        const update = { $set: { mon } };
+        const options = { upsert: true };
+        await collection.updateOne(filter, update, options);
+        return true;
+    } catch (error) {
+        console.error('Error saving event list:', error);
+        return false;
+    }
+}
+
+async function getEventList() {
+    try {
+        const collection = mongoClient.db(DB).collection('event_list');
+        const doc = await collection.findOne({ _id: "list" });
+        return doc ? doc.mon : [];
+    } catch (error) {
+        console.error('Error loading event list:', error);
+        return [];
+    }
+}
+
 module.exports = {
     connectToMongo,
     getPrefixForServer,
@@ -247,5 +274,7 @@ module.exports = {
     saveActiveLock,
     removeActiveLock,
     getActiveLocks,
-    getActiveLock
+    getActiveLock,
+    saveEventList,
+    getEventList
 };

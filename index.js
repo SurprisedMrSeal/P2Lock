@@ -1,14 +1,13 @@
-//v2.2.2
-const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType } = require('discord.js');
+//v2.4.0
+const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2 } = require('./utils');
 require('dotenv').config();
 const fs = require('fs');
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const startTime = Date.now();
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -18,28 +17,21 @@ const client = new Client({
     partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-// Create collections for prefix and slash commands
 client.commands = new Collection();
 const slashCommands = [];
-
-// Load commands
 const commands = new Map();
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
+const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
-    // register prefix and slash commands
     if (command.name) {
         client.commands.set(command.name, command);
         if (command.aliases) command.aliases.forEach(alias => client.commands.set(alias, command));
     }
-    // collect slash command data
     if (command.data) slashCommands.push(command.data.toJSON());
 }
 
-// Load events
 const eventFiles = fs.readdirSync('./events').filter(file => file.endsWith('.js'));
-
 for (const file of eventFiles) {
     const event = require(`./events/${file}`);
     if (event.once) {
@@ -49,223 +41,205 @@ for (const file of eventFiles) {
     }
 }
 
-// connect to mongo
+// Connect to MongoDB
 connectToMongo();
 
-// status/startup
+// Ready Event
 client.on('ready', async () => {
-    client.user.setPresence({
-        activities: [{ name: `@P2Lock help | 🔒`, type: ActivityType.Playing }],
-        status: 'idle'
-    });
-
-    // register global slash commands (replace existing)
-    const rest = new REST({ version: '10' }).setToken(process.env.token);
     try {
-        // Register (overwrite) global slash commands
+        client.user.setPresence({
+            activities: [{ name: `@P2Lock help | 🔒`, type: ActivityType.Playing }],
+            status: 'idle'
+        });
+
+        const rest = new REST({ version: '10' }).setToken(process.env.token);
         await rest.put(Routes.applicationCommands(client.user.id), { body: slashCommands });
         console.log('Successfully registered global slash commands.');
-    } catch (error) {
-        console.error('Error registering global slash commands:', error);
-    }
 
-    BotID = client.user.id;
-    BotRegexp = new RegExp(`<@!?${BotID}>`);
+        global.BotID = client.user.id;
+        global.BotRegexp = new RegExp(`<@!?${BotID}>`);
 
-    console.log(`${client.user.tag} is online and ready!`);
-    
-    // Check for active locks that need to be processed
-    //console.log('Checking for active locks...');
-    try {
+        console.log(`${client.user.tag} is online and ready!`);
+
+        // Process any active locks
         const activeLocks = await getActiveLocks();
-        
-        if (activeLocks.length > 0) {
-            console.log(`Found ${activeLocks.length} active locks to process`);
-            
-            for (const lock of activeLocks) {
-                try {
-                    // Get the guild and channel
-                    const guild = client.guilds.cache.get(lock.guildId);
-                    if (!guild) {
-                        //console.log(`Guild ${lock.guildId} not found, removing lock`);
-                        await removeActiveLock(lock.guildId, lock.channelId);
-                        continue;
-                    }
-                    
-                    const channel = guild.channels.cache.get(lock.channelId);
-                    if (!channel) {
-                        //console.log(`Channel ${lock.channelId} not found, removing lock`);
-                        await removeActiveLock(lock.guildId, lock.channelId);
-                        continue;
-                    }
-                    
-                    // Check if the unlock time has passed
-                    const now = Math.floor(Date.now() / 1000);
-                    const unlockTime = lock.unlockTime;
-                    
-                    if (now >= unlockTime) {
-                        // Unlock time has passed, unlock the channel
-                        //console.log(`Unlocking channel ${channel.name} in ${guild.name} (unlock time has passed)`);
-                        
-                        try {
-                            const targetMember = await guild.members.fetch(lock.targetId).catch(() => null);
-                            const timerMinutes = await getTimer(msg.guild.id);
-                            if (targetMember) {
-                                const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
-                                if (overwrite && (overwrite.deny.has(PermissionFlagsBits.ViewChannel) || 
-                                                 overwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                                    // Channel is still locked, unlock it
-                                    await channel.permissionOverwrites.delete(targetMember.id);
-                                    await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
-                                }
-                            }
-                        } catch (error) {
-                            console.error(`Error unlocking channel ${channel.name}:`, error);
-                        }
-                        
-                        // Remove the lock from the database
-                        await removeActiveLock(lock.guildId, lock.channelId);
-                    } else {
-                        // Unlock time is in the future, set up a new timer
-                        const remainingTime = (unlockTime - now) * 1000; // convert to milliseconds
-                        //console.log(`Setting up timer for ${channel.name} in ${guild.name} (${Math.round(remainingTime/1000/60)} minutes remaining)`);
-                        
-                        setTimeout(async () => {
-                            try {
-                                const targetMember = await guild.members.fetch(lock.targetId).catch(() => null);
-                                if (!targetMember) {
-                                    await removeActiveLock(lock.guildId, lock.channelId);
-                                    return;
-                                }
-                                
-                                const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
-                                if (!overwrite || 
-                                    (!overwrite.deny.has(PermissionFlagsBits.ViewChannel) && 
-                                     !overwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                                    // Channel is already unlocked
-                                    await removeActiveLock(lock.guildId, lock.channelId);
-                                    return;
-                                }
-                                
-                                // Unlock the channel
-                                await channel.permissionOverwrites.delete(targetMember.id);
-                                
-                                // Send a notification about the auto-unlock
-                                const timerMinutes = Math.round((unlockTime - lock.lockTime) / 60);
-                                await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
-                                
-                                // Remove the lock from the database
-                                await removeActiveLock(lock.guildId, lock.channelId);
-                            } catch (error) {
-                                console.error('Error in scheduled unlock:', error);
-                                await removeActiveLock(lock.guildId, lock.channelId);
-                            }
-                        }, remainingTime);
-                    }
-                    
-                } catch (error) {
-                    console.error(`Error processing lock for channel ${lock.channelId}:`, error);
-                    await removeActiveLock(lock.guildId, lock.channelId);
-                }
-            }
-        } else {
+        if (activeLocks.length === 0) {
             console.log('No active locks found');
+            return;
+        }
+
+        console.log(`Found ${activeLocks.length} active locks to process`);
+
+        for (const lock of activeLocks) {
+            try {
+                const guild = client.guilds.cache.get(lock.guildId);
+                if (!guild) {
+                    await removeActiveLock(lock.guildId, lock.channelId);
+                    continue;
+                }
+
+                const channel = guild.channels.cache.get(lock.channelId);
+                if (!channel) {
+                    await removeActiveLock(lock.guildId, lock.channelId);
+                    continue;
+                }
+
+                const now = Math.floor(Date.now() / 1000);
+                const unlockTime = lock.unlockTime;
+
+                if (now >= unlockTime) {
+                    const targetMember = await guild.members.fetch(P2).catch(() => null);
+                    const timerMinutes = await getTimer(guild.id);
+                    if (targetMember) {
+                        const overwrite = channel.permissionOverwrites.cache.get(P2);
+                        if (overwrite && (overwrite.deny.has(PermissionFlagsBits.ViewChannel) || overwrite.deny.has(PermissionFlagsBits.SendMessages))) {
+                            await channel.permissionOverwrites.delete(P2);
+                            await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
+                        }
+                    }
+                    await removeActiveLock(lock.guildId, lock.channelId);
+                } else {
+                    const remainingTime = (unlockTime - now) * 1000;
+                    setTimeout(async () => {
+                        try {
+                            const targetMember = await guild.members.fetch(P2).catch(() => null);
+                            if (!targetMember) {
+                                await removeActiveLock(lock.guildId, lock.channelId);
+                                return;
+                            }
+
+                            const overwrite = channel.permissionOverwrites.cache.get(P2);
+                            if (!overwrite || (!overwrite.deny.has(PermissionFlagsBits.ViewChannel) && !overwrite.deny.has(PermissionFlagsBits.SendMessages))) {
+                                await removeActiveLock(lock.guildId, lock.channelId);
+                                return;
+                            }
+
+                            await channel.permissionOverwrites.delete(P2);
+                            const timerMinutes = Math.round((unlockTime - lock.lockTime) / 60);
+                            await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
+                            await removeActiveLock(lock.guildId, lock.channelId);
+                        } catch (error) {
+                            console.error('Error in scheduled unlock:', error);
+                            await removeActiveLock(lock.guildId, lock.channelId);
+                        }
+                    }, remainingTime);
+                }
+            } catch (error) {
+                console.error(`Error processing lock for channel ${lock.channelId}:`, error);
+                await removeActiveLock(lock.guildId, lock.channelId);
+            }
         }
     } catch (error) {
-        console.error('Error checking active locks:', error);
+        console.error('Error during bot startup:', error);
     }
 });
 
-// prefix commands
+// Prefix commands
 client.on('messageCreate', async msg => {
-    if (msg.author.bot) return;
-    if (!msg.guild) return;
+    if (msg.author.bot || !msg.guild) return;
     if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) return;
 
-    const prefix = await getPrefixForServer(msg.guild.id);
-    const content = msg.content.trim();
-    let usedPrefix = null;
-    // 1) check for custom text prefix
-    if (prefix && content.startsWith(prefix)) {
-        usedPrefix = prefix;
-    }
-    // 2) check for mention prefix via regex
-    if (!usedPrefix) {
-        const mentionMatch = content.match(/^<@!?(\d+)>/);
-        if (mentionMatch && mentionMatch[1] === client.user.id) {
-            usedPrefix = mentionMatch[0];
-        }
-    }
-    // no valid prefix or mention -> ignore
-    if (!usedPrefix) return;
-    // parse arguments
-    const args = content.slice(usedPrefix.length).trim().split(/\s+/);
-    const cmd = args.shift().toLowerCase();
+    try {
+        const prefix = await getPrefixForServer(msg.guild.id);
+        const content = msg.content.trim();
+        let usedPrefix = null;
 
-    // Execute command if it exists
-    const command = client.commands.get(cmd);
-    if (command && command.execute) {
-        try {
+        if (prefix && content.startsWith(prefix)) {
+            usedPrefix = prefix;
+        }
+        if (!usedPrefix) {
+            const mentionMatch = content.match(/^<@!?(\d+)>/);
+            if (mentionMatch && mentionMatch[1] === client.user.id) {
+                usedPrefix = mentionMatch[0];
+            }
+        }
+        if (!usedPrefix) return;
+
+        const args = content.slice(usedPrefix.length).trim().split(/\s+/);
+        const cmd = args.shift().toLowerCase();
+
+        const command = client.commands.get(cmd);
+        if (command && command.execute) {
             await command.execute(msg, args, client);
-        } catch (error) {
-            console.error(error);
-            msg.reply('There was an error executing that command!').catch(console.error);
+        }
+    } catch (error) {
+        console.error('Error handling prefix command:', error);
+        if (msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) {
+            msg.reply('⚠️ Hmm, something prevented me from executing this command, try again later.').catch(console.error);
         }
     }
 });
 
-// slash commands and button interactions
+// Slash commands and button interactions
 client.on('interactionCreate', async interaction => {
-    if (interaction.isChatInputCommand()) {
-        const command = client.commands.get(interaction.commandName);
-        if (!command || !command.executeInteraction) return;
-        try {
+    try {
+        if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command || !command.executeInteraction) return;
             await command.executeInteraction(interaction, client);
-        } catch (error) {
-            console.error(error);
-            if (!interaction.replied) await interaction.reply({ content: 'There was an error executing that command!', ephemeral: true });
+
+        } else if (interaction.isButton()) {
+            if (interaction.customId === 'unlock') {
+                await handleUnlockButton(interaction);
+            } else if (interaction.customId.startsWith('timer_')) {
+                await handleTimerButton(interaction);
+            }
         }
-    } else if (interaction.isButton() && interaction.customId === 'unlock') {
-        await interaction.deferUpdate();
+    } catch (error) {
+        console.error('Error handling interaction:', error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '⚠️ Hmm, something went wrong handling your interaction.', flags: MessageFlags.Ephemeral }).catch(console.error);
+        }
+    }
+});
+
+async function handleUnlockButton(interaction) {
+    await interaction.deferUpdate().catch(console.error);
+
+    try {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
+
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.followUp({ content: '⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.', ephemeral: true });
+            return interaction.followUp({ content: '⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
-        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return interaction.followUp({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', ephemeral: true });
+
+        if (toggleableFeatures.adminMode && 
+            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && 
+            !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+            return interaction.followUp({ content: '❌ You must have the `Manage Server` or `Administrator` permission to use this.', flags: MessageFlags.Ephemeral });
         }
+
         if (!interaction.channel.permissionsFor(interaction.member).has(PermissionFlagsBits.SendMessages)) {
-            return interaction.followUp({ content: '❌ You must have the `Send Messages` permission to unlock this channel.', ephemeral: true });
+            return interaction.followUp({ content: '❌ You need `Send Messages` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
+
         const channel = interaction.channel;
-        // resolve the locked user as a guild member
-        const targetMember = await interaction.guild.members.fetch(P2);
-        const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
+        const targetMember = await interaction.guild.members.fetch(P2).catch(() => null);
+
+        if (!targetMember) {
+            return interaction.followUp({ content: '⚠️ Could not find the target member to unlock.', flags: MessageFlags.Ephemeral });
+        }
+
+        const overwrite = channel.permissionOverwrites.cache.get(P2);
         if (overwrite && overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-            // unlock permissions for that user
-            await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
-            // mention the user without pinging
-            const userMention = `<@${interaction.user.id}>`;
+            await channel.permissionOverwrites.edit(P2, { ViewChannel: true, SendMessages: true });
+
             await interaction.followUp({
-                content: `This channel has been unlocked by ${userMention}!`,
+                content: `This channel has been unlocked by <@${interaction.user.id}>!`,
                 allowedMentions: { users: [] }
             });
-            
-            // Remove the lock from the database if it exists
-            try {
-                await removeActiveLock(interaction.guild.id, channel.id);
-                //console.log(`Removed lock for channel ${channel.id} in guild ${interaction.guild.id} via button interaction`);
-            } catch (error) {
-                console.error(`Error removing lock from database: ${error}`);
-            }
+
+            await removeActiveLock(interaction.guild.id, channel.id);
+
+            const row = ActionRowBuilder.from(interaction.message.components[0]);
+            row.components[0].setDisabled(true);
+            await interaction.message.edit({ components: [row] });
         } else {
-            await interaction.followUp({ content: 'This channel is already unlocked.', ephemeral: true });
+            await interaction.followUp({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
         }
-        // disable button
-        const row = ActionRowBuilder.from(interaction.message.components[0]);
-        row.components[0].setDisabled(true);
-        await interaction.message.edit({ components: [row] });
+    } catch (error) {
+        console.error('Error handling unlock button:', error);
     }
-});
+}
 
 client.login(process.env.token);
