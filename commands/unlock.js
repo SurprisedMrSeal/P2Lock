@@ -1,7 +1,7 @@
-//v2.2.2
+//v2.3.1
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
-const { SlashCommandBuilder, PermissionFlagsBits, InteractionResponseFlags } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, InteractionResponseFlags, MessageFlags } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.'),
@@ -64,7 +64,7 @@ module.exports = {
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
             // if not locked for that user, nothing to do
             if (!overwrite || !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-                return interaction.reply({ content: 'This channel is already unlocked.', flags: InteractionResponseFlags.Ephemeral });
+                return interaction.reply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
             }
             // unlock for that user
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
@@ -85,7 +85,7 @@ module.exports = {
             });
         } catch (error) {
             console.error('(Unlock Interaction) Error in unlock command:', error);
-            return interaction.reply({ content: '⚠️ Hmm, something prevented me from unlocking this channel.', flags: InteractionResponseFlags.Ephemeral });
+            return interaction.reply({ content: '⚠️ Hmm, something prevented me from unlocking this channel.', flags: MessageFlags.Ephemeral });
         }
     }
 };
