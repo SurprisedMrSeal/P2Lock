@@ -1,4 +1,4 @@
-# P2Lock!!
+# [P2Lock!!](https://p2lock.carrd.co/)
 
 This is a discord bot that Locks your hunts, rares and regionals and more! (toggleable).
 
@@ -30,7 +30,6 @@ Basically does the same-ish thing as Poké-Lock (+ Rare/Regional lock)
 This lets you use configurable features without having to store the information wherever you're hosting it. If you're not going to be using these features (toggling some features, changing prefixes etc.) You can check out the mongo-less version ['without-DB (1.14.3)'](https://github.com/SurprisedMrSeal/P2Lock/tree/without-DB-(1.14.3)) (This is an old version and may/may not be be updated in the future).
 
 - You will need to create a database in Mongo and name it P2Lock (can change it if you change it in mongoUtils.js too (const DB = ))
-- create the collections 'blacklisted_channels', 'config', and 'toggleable_features'
 - copy your uri and paste it in the .env file
 - allow your ip or the ip of the place you're hosting from if needed
 ---
