@@ -1,4 +1,4 @@
-//v2.2.4
+//v2.4.2
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime } = require('../utils');
@@ -13,7 +13,7 @@ const commandDefs = prefix => [
   { name: 'toggle',   description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
   { name: 'pingafk',  description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
   { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
-  { name: 'blacklist',description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
+  { name: 'blacklist',description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist\` \`${prefix}bl\`` },
   { name: 'info',     description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
 ];
 

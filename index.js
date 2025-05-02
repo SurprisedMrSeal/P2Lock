@@ -1,7 +1,7 @@
-//v2.4.0
+//v2.4.2
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
-const { P2 } = require('./utils');
+const { P2, version } = require('./utils');
 require('dotenv').config();
 const fs = require('fs');
 const { REST } = require('@discordjs/rest');
@@ -59,7 +59,7 @@ client.on('ready', async () => {
         global.BotID = client.user.id;
         global.BotRegexp = new RegExp(`<@!?${BotID}>`);
 
-        console.log(`${client.user.tag} is online and ready!`);
+        console.log(`${client.user.tag} v${version} is online and ready!`);
 
         // Process any active locks
         const activeLocks = await getActiveLocks();

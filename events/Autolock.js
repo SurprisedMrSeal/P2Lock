@@ -1,4 +1,4 @@
-//v2.4.0
+//v2.4.2
 const { P2, Pname, P2a, Seal } = require('../utils');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -55,8 +55,7 @@ module.exports = {
                         await warningMessage.edit(`⌛ This channel will be locked i- cancelled.`);
                     });
                     
-                    const checkInterval = 10;
-                    //const checkInterval = 1000;
+                    const checkInterval = 1000;
                     const iterations = delaySeconds;
                     
                     for (let i = 0; i < iterations; i++) {
@@ -69,7 +68,12 @@ module.exports = {
                         
                         if (currentOverwrite && (currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) || 
                                                 currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                            await warningMessage.delete();
+                            try {
+                                await warningMessage.delete();
+                            } catch (err) {
+                                console.warn('Warning message already deleted or not found:', err.code);
+                            }
+                            warningMessage = null;
                             return;
                         }
                     }
