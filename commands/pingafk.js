@@ -1,5 +1,6 @@
+//v2.4.3
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
-const { Pname, P2a, Seal } = require('../utils');
+const { Pname, P2a, P2a_P, Seal } = require('../utils');
 
 module.exports = {
     name: 'pingafk',
@@ -23,7 +24,7 @@ module.exports = {
         try {
             referencedMessage = await msg.fetchReference();
         } catch (error) {
-            console.error('Error fetching reference:', error);
+            console.error('(PingAfk) Error fetching reference:', error);
             return;
         }
         //Pname
@@ -52,7 +53,7 @@ module.exports = {
             }
         }
         //P2a
-        else if (referencedMessage && referencedMessage.content && (referencedMessage.author.id === P2a || referencedMessage.author.id === Seal)) {
+        else if (referencedMessage && referencedMessage.content && (referencedMessage.author.id === P2a || referencedMessage.author.id === P2a_P || referencedMessage.author.id === Seal)) {
             const mentionedUsers = [];
             const userIdRegex = /(\d{17,19}) \(AFK\)/g;
             let match;

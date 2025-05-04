@@ -1,5 +1,5 @@
-//v2.4.2
-const { P2, Pname, P2a, Seal } = require('../utils');
+//v2.4.3
+const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
@@ -11,7 +11,7 @@ module.exports = {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const eventList = await getEventList();
 
-        if ([Pname, P2a, Seal].includes(msg.author.id) &&
+        if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
             (
                 (toggleableFeatures.includeShinyHuntPings && (msg.content.includes('**✨Shiny Hunt Pings:** ') || msg.content.includes('**✨ Shiny Hunt Pings:** ') || msg.content.includes('Shiny hunt pings: '))) ||

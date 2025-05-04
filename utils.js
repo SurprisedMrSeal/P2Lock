@@ -1,4 +1,4 @@
-//v2.4.0
+//v2.4.3
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
@@ -6,6 +6,7 @@ const version = packageJson.version;
 const P2 = "716390085896962058";
 const Pname = "874910942490677270";
 const P2a = "854233015475109888";
+const P2a_P = "1254602968938844171";
 
 const Seal = "590572827485405194";
 
@@ -27,6 +28,7 @@ module.exports = {
     P2,
     Pname,
     P2a,
+    P2a_P,
     Seal,
     prefix,
     embedColor,
