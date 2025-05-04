@@ -1,4 +1,4 @@
-//v2.4.3
+//v2.4.4
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -109,14 +109,15 @@ module.exports = {
                     await saveActiveLock(
                         msg.guild.id,
                         msg.channel.id,
+                        client.user.id,
                         currentTime,
                         unlockTime
                     );
                     
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `⏳ This channel has been locked. Ask an admin to unlock this channel.`;
+                        lockContent = `⏳ This channel has been locked. Ask an admin to unlock this channel.\n-# Automatically Unlocks <t:${unlockTime}:R>`;
                     } else {
-                        lockContent = `⏳ This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.`;
+                        lockContent = `⏳ This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.\n-# Automatically Unlocks <t:${unlockTime}:R>`;
                     }
                 } else {
                     if (toggleableFeatures.adminMode) {
@@ -168,18 +169,18 @@ module.exports = {
                         try {
                             const channel = msg.channel;
                             if (!channel) {
-                                await removeActiveLock(msg.guild.id, msg.channel.id);
+                                await removeActiveLock(msg.guild.id, client.user.id, msg.channel.id);
                                 return;
                             }
                             
-                            const activeLock = await getActiveLock(msg.guild.id, channel.id);
+                            const activeLock = await getActiveLock(msg.guild.id, client.user.id, channel.id);
                             if (!activeLock) {
                                 return;
                             }
                             
                             const targetMember = await msg.guild.members.fetch(P2).catch(() => null);
                             if (!targetMember) {
-                                await removeActiveLock(msg.guild.id, channel.id);
+                                await removeActiveLock(msg.guild.id, client.user.id, channel.id);
                                 return;
                             }
                             
@@ -187,7 +188,7 @@ module.exports = {
                             if (!currentOverwrite || 
                                 (!currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) && 
                                  !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                                await removeActiveLock(msg.guild.id, channel.id);
+                                await removeActiveLock(msg.guild.id, client.user.id, channel.id);
                                 return;
                             }
                             
@@ -195,11 +196,11 @@ module.exports = {
                             
                             await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
                             
-                            await removeActiveLock(msg.guild.id, channel.id);
+                            await removeActiveLock(msg.guild.id, client.user.id, channel.id);
                             
                         } catch (error) {
                             console.error('(AutoUnlock) Error in auto-unlock:', error);
-                            await removeActiveLock(msg.guild.id, msg.channel.id);
+                            await removeActiveLock(msg.guild.id, client.user.id, msg.channel.id);
                         }
                     }, unlockDelay);
                 }

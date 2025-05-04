@@ -1,4 +1,4 @@
-//v2.4.2
+//v2.4.4
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -51,18 +51,19 @@ client.on('ready', async () => {
             activities: [{ name: `@P2Lock help | 🔒`, type: ActivityType.Playing }],
             status: 'idle'
         });
+        
+        global.BotID = client.user.id;
 
         const rest = new REST({ version: '10' }).setToken(process.env.token);
         await rest.put(Routes.applicationCommands(client.user.id), { body: slashCommands });
         console.log('Successfully registered global slash commands.');
 
-        global.BotID = client.user.id;
         global.BotRegexp = new RegExp(`<@!?${BotID}>`);
 
         console.log(`${client.user.tag} v${version} is online and ready!`);
 
         // Process any active locks
-        const activeLocks = await getActiveLocks();
+        const activeLocks = await getActiveLocks(global.BotID);
         if (activeLocks.length === 0) {
             console.log('No active locks found');
             return;
@@ -74,13 +75,13 @@ client.on('ready', async () => {
             try {
                 const guild = client.guilds.cache.get(lock.guildId);
                 if (!guild) {
-                    await removeActiveLock(lock.guildId, lock.channelId);
+                    await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                     continue;
                 }
 
                 const channel = guild.channels.cache.get(lock.channelId);
                 if (!channel) {
-                    await removeActiveLock(lock.guildId, lock.channelId);
+                    await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                     continue;
                 }
 
@@ -97,36 +98,36 @@ client.on('ready', async () => {
                             await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
                         }
                     }
-                    await removeActiveLock(lock.guildId, lock.channelId);
+                    await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                 } else {
                     const remainingTime = (unlockTime - now) * 1000;
                     setTimeout(async () => {
                         try {
                             const targetMember = await guild.members.fetch(P2).catch(() => null);
                             if (!targetMember) {
-                                await removeActiveLock(lock.guildId, lock.channelId);
+                                await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                                 return;
                             }
 
                             const overwrite = channel.permissionOverwrites.cache.get(P2);
                             if (!overwrite || (!overwrite.deny.has(PermissionFlagsBits.ViewChannel) && !overwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                                await removeActiveLock(lock.guildId, lock.channelId);
+                                await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                                 return;
                             }
 
                             await channel.permissionOverwrites.delete(P2);
                             const timerMinutes = Math.round((unlockTime - lock.lockTime) / 60);
                             await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
-                            await removeActiveLock(lock.guildId, lock.channelId);
+                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                         } catch (error) {
                             console.error('Error in scheduled unlock:', error);
-                            await removeActiveLock(lock.guildId, lock.channelId);
+                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                         }
                     }, remainingTime);
                 }
             } catch (error) {
                 console.error(`Error processing lock for channel ${lock.channelId}:`, error);
-                await removeActiveLock(lock.guildId, lock.channelId);
+                await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
             }
         }
     } catch (error) {
@@ -137,7 +138,8 @@ client.on('ready', async () => {
 // Prefix commands
 client.on('messageCreate', async msg => {
     if (msg.author.bot || !msg.guild) return;
-    if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) return;
+    if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
+     !msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) return;
 
     try {
         const prefix = await getPrefixForServer(msg.guild.id);
@@ -229,7 +231,7 @@ async function handleUnlockButton(interaction) {
                 allowedMentions: { users: [] }
             });
 
-            await removeActiveLock(interaction.guild.id, channel.id);
+            await removeActiveLock(interaction.guild.id, global.BotID, channel.id);
 
             const row = ActionRowBuilder.from(interaction.message.components[0]);
             row.components[0].setDisabled(true);

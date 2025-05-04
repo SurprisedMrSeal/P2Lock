@@ -1,4 +1,4 @@
-//v2.4.1
+//v2.4.4
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const { prefix } = require('./utils');
@@ -170,7 +170,7 @@ async function loadBlacklistedChannels(guildId) {
 }
 
 // Active Locks
-async function saveActiveLock(guildId, channelId, lockTime, unlockTime) {
+async function saveActiveLock(guildId, channelId, botId, lockTime, unlockTime) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
         const filter = { guildId, channelId };
@@ -178,6 +178,7 @@ async function saveActiveLock(guildId, channelId, lockTime, unlockTime) {
             $set: { 
                 guildId,
                 channelId,
+                botId,
                 lockTime,
                 unlockTime
             } 
@@ -191,10 +192,10 @@ async function saveActiveLock(guildId, channelId, lockTime, unlockTime) {
     }
 }
 
-async function removeActiveLock(guildId, channelId) {
+async function removeActiveLock(guildId, botId, channelId) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        const result = await locksCollection.deleteOne({ guildId, channelId });
+        const result = await locksCollection.deleteOne({ guildId, botId, channelId });
         return result.deletedCount > 0;
     } catch (error) {
         console.error('Error removing active lock from MongoDB:', error);
@@ -202,20 +203,20 @@ async function removeActiveLock(guildId, channelId) {
     }
 }
 
-async function getActiveLocks() {
+async function getActiveLocks(botId) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        return await locksCollection.find({}).toArray();
+        return await locksCollection.find({botId}).toArray();
     } catch (error) {
         console.error('Error fetching active locks from MongoDB:', error);
         return [];
     }
 }
 
-async function getActiveLock(guildId, channelId) {
+async function getActiveLock(guildId, botId, channelId) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        return await locksCollection.findOne({ guildId, channelId });
+        return await locksCollection.findOne({ guildId, botId, channelId });
     } catch (error) {
         console.error('Error fetching active lock from MongoDB:', error);
         return null;
