@@ -1,7 +1,7 @@
-//v2.4.4
-const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
-const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
+//v2.4.5
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
+const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 
 module.exports = {
     name: 'messageCreate',
@@ -14,11 +14,11 @@ module.exports = {
         if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
             (
-                (toggleableFeatures.includeShinyHuntPings && (msg.content.includes('**✨Shiny Hunt Pings:** ') || msg.content.includes('**✨ Shiny Hunt Pings:** ') || msg.content.includes('Shiny hunt pings: '))) ||
-                (toggleableFeatures.includeRarePings && (msg.content.includes('**Rare Ping:** ') || msg.content.includes('Rare ping: '))) ||
-                (toggleableFeatures.includeRegionalPings && (msg.content.includes('**Regional Ping:** ') || msg.content.includes('Regional ping: '))) ||
+                (toggleableFeatures.includeShinyHuntPings && (msg.content.toLowerCase().includes('shiny hunt pings:'))) ||
+                (toggleableFeatures.includeRarePings && (msg.content.toLowerCase().includes('rare ping:'))) ||
+                (toggleableFeatures.includeRegionalPings && (msg.content.toLowerCase().includes('regional ping:'))) ||
                 (toggleableFeatures.includeCollectionPings && (msg.content.toLowerCase().includes('collection pings:'))) ||
-                (toggleableFeatures.includeQuestPings && (msg.content.includes('**Quest Pings:** ') || msg.content.includes('Quest pings: '))) ||
+                (toggleableFeatures.includeQuestPings && (msg.content.toLowerCase().includes('quest pings:'))) ||
                 (toggleableFeatures.includeTypePings && msg.content.includes('Type pings: ')) ||
                 (toggleableFeatures.includeEventPings && msg.author.id !== Seal && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase())))                 
             )
@@ -105,6 +105,8 @@ module.exports = {
                     const currentTime = Math.floor(Date.now() / 1000);
                     const unlockTime = currentTime + (timerMinutes * 60);
                     
+                    // Remove any existing lock for this channel first
+                    await removeActiveLock(msg.guild.id, client.user.id, msg.channel.id);
                     // Save the active lock to the database
                     await saveActiveLock(
                         msg.guild.id,

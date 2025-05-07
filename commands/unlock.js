@@ -1,7 +1,7 @@
-//v2.3.1
+//v2.4.5
+const { SlashCommandBuilder, PermissionFlagsBits, InteractionResponseFlags, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
-const { SlashCommandBuilder, PermissionFlagsBits, InteractionResponseFlags, MessageFlags } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.'),
@@ -31,7 +31,7 @@ module.exports = {
             
             // Remove the lock from the database if it exists
             try {
-                await removeActiveLock(msg.guild.id, channel.id);
+                await removeActiveLock(msg.guild.id, client.user.id, channel.id);
                 //console.log(`Removed lock for channel ${channel.id} in guild ${msg.guild.id} via prefix command`);
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);
@@ -71,7 +71,7 @@ module.exports = {
             
             // Remove the lock from the database if it exists
             try {
-                await removeActiveLock(interaction.guild.id, channel.id);
+                await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
                 //console.log(`Removed lock for channel ${channel.id} in guild ${interaction.guild.id} via slash command`);
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);

@@ -1,4 +1,4 @@
-//v2.4.4
+//v2.4.5
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -58,7 +58,7 @@ client.on('ready', async () => {
         await rest.put(Routes.applicationCommands(client.user.id), { body: slashCommands });
         console.log('Successfully registered global slash commands.');
 
-        global.BotRegexp = new RegExp(`<@!?${BotID}>`);
+        global.BotRegexp = new RegExp(`<@!?${global.BotID}>`);
 
         console.log(`${client.user.tag} v${version} is online and ready!`);
 
@@ -83,6 +83,32 @@ client.on('ready', async () => {
                 if (!channel) {
                     await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                     continue;
+                }
+
+                if (P2) {
+                    try {
+                        const overwrite = channel.permissionOverwrites.cache.get(P2);
+                        if (overwrite) {
+                        const deniedView = overwrite.deny.has(PermissionFlagsBits.ViewChannel);
+                        const deniedSend = overwrite.deny.has(PermissionFlagsBits.SendMessages);
+                        if (!deniedView && !deniedSend) {
+                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
+                            continue;
+                        }
+                        } else {
+                        // No overwrite, check effective permissions
+                        const permissions = channel.permissionsFor(P2);
+                        if (permissions.has(PermissionFlagsBits.ViewChannel) && permissions.has(PermissionFlagsBits.SendMessages)) {
+                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
+                            continue;
+                        }
+                        }
+
+                    } catch (error) {
+                        console.error(`Error checking permissions for P2 in ${channel.id}:`, error);
+                        await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
+                        continue;
+                    }
                 }
 
                 const now = Math.floor(Date.now() / 1000);
@@ -175,6 +201,7 @@ client.on('messageCreate', async msg => {
 // Slash commands and button interactions
 client.on('interactionCreate', async interaction => {
     try {
+        if (!interaction.inGuild()) return;
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command || !command.executeInteraction) return;
