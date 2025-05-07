@@ -1,6 +1,6 @@
 //v2.4.5
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList } = require('../mongoUtils');
+const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 
 module.exports = {
@@ -9,8 +9,10 @@ module.exports = {
         if (!msg.guild) return;
         const prefix = await getPrefixForServer(msg.guild.id);
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
+        const blacklistedChannels = await loadBlacklistedChannels(msg.guild.id);
         const eventList = await getEventList();
 
+        if (blacklistedChannels.includes(msg.channel.id)) return;
         if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
             (
@@ -87,7 +89,7 @@ module.exports = {
                 
                 if (overwrite && overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
                     if (warningMessage) {
-                        await warningMessage.edit(`⌛ The channel is already locked.`);
+                        await warningMessage.edit(`This channel is already locked.`);
                     }
                     return;
                 }
@@ -117,9 +119,9 @@ module.exports = {
                     );
                     
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `⏳ This channel has been locked. Ask an admin to unlock this channel.\n-# Automatically Unlocks <t:${unlockTime}:R>`;
+                        lockContent = `This channel has been locked. Ask an admin to unlock this channel.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     } else {
-                        lockContent = `⏳ This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.\n-# Automatically Unlocks <t:${unlockTime}:R>`;
+                        lockContent = `This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     }
                 } else {
                     if (toggleableFeatures.adminMode) {
