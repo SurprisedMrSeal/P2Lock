@@ -1,4 +1,4 @@
-//v2.4.2
+//v2.5.1
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime } = require('../utils');
@@ -13,7 +13,9 @@ const commandDefs = prefix => [
   { name: 'toggle',   description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
   { name: 'pingafk',  description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
   { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
-  { name: 'blacklist',description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist\` \`${prefix}bl\`` },
+  { name: 'blacklist',description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
+  { name: 'suggest',  description: `Sends your suggestion to the developer.\n\`${prefix}suggest []\`` },
+  { name: 'report',   description: `Sends your report to the developer.\n\`${prefix}report []\`` },
   { name: 'info',     description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
 ];
 
@@ -21,7 +23,7 @@ const commandDefs = prefix => [
 async function buildPagedEmbed(user, guildId, client, page = 1) {
   const prefix = await getPrefixForServer(guildId);
   const commands = commandDefs(prefix);
-  const itemsPerPage = 6;
+  const itemsPerPage = 8;
   const totalPages = Math.ceil(commands.length / itemsPerPage);
   const start = (page - 1) * itemsPerPage;
   const current = commands.slice(start, start + itemsPerPage);
@@ -82,7 +84,7 @@ function handleCollector(message, channel, client, originalUserId) {
     // Get the correct prefix for the server for this page
     const prefix = await getPrefixForServer(guild.id);
     const commands = commandDefs(prefix);
-    const itemsPerPage = 6;
+    const itemsPerPage = 8;
     const totalPages = Math.ceil(commands.length / itemsPerPage);
 
     page = i.customId === 'help_prev'

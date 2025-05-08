@@ -1,5 +1,5 @@
-//v2.4.5
-const { SlashCommandBuilder, PermissionFlagsBits, InteractionResponseFlags, MessageFlags } = require('discord.js');
+//v2.5.1
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
 
@@ -52,10 +52,10 @@ module.exports = {
     async executeInteraction(interaction, client) {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.reply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: InteractionResponseFlags.Ephemeral });
+            return interaction.reply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
         if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: InteractionResponseFlags.Ephemeral });
+            return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
         }
         try {
             const channel = interaction.channel;
