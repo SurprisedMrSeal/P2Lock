@@ -9,7 +9,8 @@ const P2a = "854233015475109888";
 const P2a_P = "1254602968938844171";
 
 const Seal = "590572827485405194";
-const webhookLink = "https://discord.com/api/webhooks/1369960713874968606/CM3GmLMgGVRtaGUY2sBTeqPXTg7C6CB_CPv7LS7bEGFmaf0ASykLn3vCAffRc1dX1GJg";
+//removed webhook link
+const webhookLink = "";
 
 const prefix = ";";
 const embedColor = "008080";
