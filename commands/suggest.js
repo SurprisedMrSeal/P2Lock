@@ -1,4 +1,4 @@
-//v2.5.3
+//v2.5.2
 const { EmbedBuilder, SlashCommandBuilder, WebhookClient, MessageFlags } = require('discord.js');
 require('dotenv').config();
 
