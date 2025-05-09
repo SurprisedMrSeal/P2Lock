@@ -1,4 +1,4 @@
-//v2.5.1
+//v2.5.3
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -8,6 +8,10 @@ module.exports = {
     name: 'unlock',
     aliases: ['ul', 'u'],
     async execute(msg, args, client) {
+        const member = msg.guild.members.cache.get(P2);
+        if (!member) {
+        return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
+        }
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
 
         if (!msg.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
@@ -51,6 +55,10 @@ module.exports = {
     },
     async executeInteraction(interaction, client) {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
+        const member = interaction.guild.members.cache.get(P2);
+        if (!member) {
+        return interaction.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
+        }
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
             return interaction.reply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }

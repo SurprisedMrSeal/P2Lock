@@ -1,15 +1,20 @@
+//v2.5.3
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
-const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require('discord.js');
 
 module.exports = {
-    data: new SlashCommandBuilder().setName('lock').setDescription('Locks the current channel'),
+    data: new SlashCommandBuilder().setName('lock').setDescription('Locks the current channel.'),
     name: 'lock',
     aliases: ['l'],
     async execute(msg, args, client) {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const prefix = await getPrefixForServer(msg.guild.id);
         // Check bot guild-level ManageRoles permission
+        const member = msg.guild.members.cache.get(P2);
+        if (!member) {
+        return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
+        }
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return msg.channel.send('⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.');
         }
@@ -39,7 +44,7 @@ module.exports = {
             const userMention = `<@${msg.author.id}>`;
 
             if (toggleableFeatures.adminMode) {
-                await msg.channel.send(`This channel has been locked. Ask an admin to unlock this channel.`);
+                await msg.channel.send(`This channel has been locked. Ask an admin to unlock this channel!`);
             } else {
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId('unlock').setEmoji('🔓').setStyle(ButtonStyle.Secondary)
@@ -62,6 +67,10 @@ module.exports = {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const prefix = await getPrefixForServer(interaction.guild.id);
         // Check bot guild-level ManageRoles permission
+        const member = interaction.guild.members.cache.get(P2);
+        if (!member) {
+        return interaction.editReply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
+        }
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.' });
         }
@@ -104,7 +113,7 @@ module.exports = {
             }
         } catch (error) {
             console.error('(Lock Interaction) Error in lock command:', error);
-            return interaction.editReply({ content: '⚠️ Hmm, something prevented me from locking this channel.' });
+            return interaction.editReply({ content: '⚠️ Hmm, something prevented me from locking this channel.', flags: MessageFlags.Ephemeral });
         }
     }
 };

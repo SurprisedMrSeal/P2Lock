@@ -1,4 +1,4 @@
-//v2.2.4
+//v2.5.3
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const chunk = require('lodash.chunk');
 const { P2, embedColor } = require('../utils');
@@ -11,10 +11,11 @@ module.exports = {
     aliases: ['ll'],
     async execute(msg, args, client) {
         try {
-            const guildChannels = msg.guild.channels.cache;
+            const guildChannels = await msg.guild.channels.fetch();
             const lockedChannels = [...guildChannels.filter(channel => {
-                const permissions = channel.permissionOverwrites.cache.get(P2);
-                return permissions && permissions.deny.has(PermissionFlagsBits.ViewChannel);
+            if (!channel.permissionOverwrites || !channel.permissionOverwrites.cache) return false;
+            const permissions = channel.permissionOverwrites.cache.get(P2);
+            return permissions && permissions.deny.has(PermissionFlagsBits.ViewChannel);
             }).values()];
 
             if (lockedChannels.length === 0) {
@@ -88,11 +89,13 @@ module.exports = {
     async executeInteraction(interaction, client) {
         await interaction.deferReply();
         try {
-            const guildChannels = interaction.guild.channels.cache;
+            const guildChannels = await interaction.guild.channels.fetch();
             const lockedChannels = [...guildChannels.filter(channel => {
+                if (!channel.permissionOverwrites || !channel.permissionOverwrites.cache) return false;
                 const permissions = channel.permissionOverwrites.cache.get(P2);
                 return permissions && permissions.deny.has(PermissionFlagsBits.ViewChannel);
             }).values()];
+
             if (lockedChannels.length === 0) {
                 return interaction.editReply('There are no locked channels.');
             }
