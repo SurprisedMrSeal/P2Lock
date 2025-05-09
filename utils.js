@@ -1,4 +1,4 @@
-//v2.5.1
+//v2.5.2
 const fs = require('fs');
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const version = packageJson.version;
@@ -9,8 +9,6 @@ const P2a = "854233015475109888";
 const P2a_P = "1254602968938844171";
 
 const Seal = "590572827485405194";
-//removed webhook link
-const webhookLink = "";
 
 const prefix = ";";
 const embedColor = "008080";
@@ -32,7 +30,6 @@ module.exports = {
     P2a,
     P2a_P,
     Seal,
-    webhookLink,
     prefix,
     embedColor,
     version,

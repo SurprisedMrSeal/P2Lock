@@ -1,9 +1,16 @@
-//v2.5.1
+//v2.5.2
 const { EmbedBuilder, SlashCommandBuilder, WebhookClient, MessageFlags } = require('discord.js');
-const { webhookLink } = require('../utils');
+require('dotenv').config();
 
+const webhookLink = process.env.report_suggest_webhook;
 const embedColor = "FF0000";
-const webhookClient = new WebhookClient({ url: webhookLink });
+let webhookClient = null;
+
+if (webhookLink) {
+    webhookClient = new WebhookClient({ url: webhookLink });
+} else {
+    console.warn('No webhook link set, report. won\'t be sent.');
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,6 +23,10 @@ module.exports = {
         ),
     name: 'report',
     async execute(msg, args, client) {
+
+        if (!webhookClient) {
+            return msg.reply({ content: "❕ Report system is currently unavailable. Please try again later when a webhook is set." });
+        }
 
         if (!args.length) {
             return msg.channel.send({ content: "❕Please enter your report." });
@@ -47,9 +58,9 @@ module.exports = {
     },
     async executeInteraction(interaction, client) {
         const reportMsg = interaction.options.getString('message');
-        if (!reportMsg) {
-            return interaction.reply({ content: "❕Please enter a report." });
-        }
+        if (!webhookClient) {
+            return interaction.reply({ content: "❕ Report system is currently unavailable. Please try again later when a webhook is set.", flags: MessageFlags.Ephemeral });
+            }
         if (reportMsg.length > 2000) 
             return interaction.reply({ content: "⚠️ [Too Long.](<https://www.youtube.com/watch?v=Z6_ZNW1DACE>)", flags: MessageFlags.Ephemeral });
         try {

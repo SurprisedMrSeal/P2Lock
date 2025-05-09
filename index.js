@@ -1,4 +1,4 @@
-//v2.4.5
+//v2.5.2
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -265,6 +265,9 @@ async function handleUnlockButton(interaction) {
             await interaction.message.edit({ components: [row] });
         } else {
             await interaction.followUp({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
+            const row = ActionRowBuilder.from(interaction.message.components[0]);
+            row.components[0].setDisabled(true);
+            await interaction.message.edit({ components: [row] });
         }
     } catch (error) {
         console.error('Error handling unlock button:', error);
