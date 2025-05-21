@@ -1,4 +1,4 @@
-//v2.5.3
+//v2.5.4
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -8,14 +8,14 @@ module.exports = {
     name: 'unlock',
     aliases: ['ul', 'u'],
     async execute(msg, args, client) {
-        const member = msg.guild.members.cache.get(P2);
+        const member = await msg.guild.members.fetch(P2);
         if (!member) {
         return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
         }
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
 
         if (!msg.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
+            return msg.channel.send('⚠️ Error: I don\'t have the `Manage Permissions` permission to unlock this channel.');
         }
         if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id !== Seal) {
             return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
@@ -55,12 +55,12 @@ module.exports = {
     },
     async executeInteraction(interaction, client) {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
-        const member = interaction.guild.members.cache.get(P2);
+        const member = await interaction.guild.members.fetch(P2);
         if (!member) {
         return interaction.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
         }
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.reply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
+            return interaction.reply({ content: '⚠️ I\'m missing the `Manage Permissions` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
         if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });

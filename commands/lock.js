@@ -1,4 +1,4 @@
-//v2.5.3
+//v2.5.4
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -11,12 +11,12 @@ module.exports = {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const prefix = await getPrefixForServer(msg.guild.id);
         // Check bot guild-level ManageRoles permission
-        const member = msg.guild.members.cache.get(P2);
+        const member = await msg.guild.members.fetch(P2);
         if (!member) {
         return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
         }
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-            return msg.channel.send('⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.');
+            return msg.channel.send('⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.');
         }
         // Check user permissions if adminMode is enabled
         if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id != Seal) {
@@ -67,12 +67,12 @@ module.exports = {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const prefix = await getPrefixForServer(interaction.guild.id);
         // Check bot guild-level ManageRoles permission
-        const member = interaction.guild.members.cache.get(P2);
+        const member = await interaction.guild.members.fetch(P2);
         if (!member) {
         return interaction.editReply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
         }
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.' });
+            return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.' });
         }
         // Check user permissions if adminMode is enabled
         if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {

@@ -1,4 +1,4 @@
-//v2.4.5
+//v2.5.4
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
@@ -25,9 +25,8 @@ module.exports = {
                 (toggleableFeatures.includeEventPings && msg.author.id !== Seal && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase())))                 
             )
         ) {
-            if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages)) return;
             if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-                return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to lock this channel.');
+                return msg.channel.send('⚠️ Error: I don\'t have the `Manage Permissions` permission to lock this channel.');
             }
             
             try {
@@ -42,9 +41,7 @@ module.exports = {
                     
                     warningMessage = await msg.channel.send(`⏳ This channel will be locked <t:${lockTime}:R>`);
                     
-                    const filter = m => m.author.id === P2 
-                    //&& (m.content.startsWith("Congratulations ") && m.content.includes("You caught a Level"))
-                    ;
+                    const filter = m => m.author.id === P2;
                     
                     const collector = msg.channel.createMessageCollector({ 
                         filter, 

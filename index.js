@@ -1,4 +1,4 @@
-//v2.5.3
+//v2.5.4
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -164,9 +164,6 @@ client.on('ready', async () => {
 // Prefix commands
 client.on('messageCreate', async msg => {
     if (msg.author.bot || !msg.guild) return;
-    if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
-     !msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) return;
-
     try {
         const prefix = await getPrefixForServer(msg.guild.id);
         const content = msg.content.trim();
@@ -184,10 +181,17 @@ client.on('messageCreate', async msg => {
         if (!usedPrefix) return;
 
         const args = content.slice(usedPrefix.length).trim().split(/\s+/);
-        const cmd = args.shift().toLowerCase();
-
+        const cmd = args.shift()?.toLowerCase();
+        if (!cmd) return;
         const command = client.commands.get(cmd);
         if (command && command.execute) {
+            if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) ||
+            !msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) {
+            msg.react('🤐')
+            msg.author.send('⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐')
+            .catch(() => {});
+            return;
+        }
             await command.execute(msg, args, client);
         }
     } catch (error) {
@@ -201,7 +205,12 @@ client.on('messageCreate', async msg => {
 // Slash commands and button interactions
 client.on('interactionCreate', async interaction => {
     try {
-        if (!interaction.inGuild()) return;
+        if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) ||
+            !interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) 
+            return interaction.reply({ content: "⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐", flags: MessageFlags.Ephemeral });
+        
+        if (!interaction.inGuild()) 
+            return interaction.reply({ content: '⚠️ This command cannot be run inside DMs :(' });
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command || !command.executeInteraction) return;
