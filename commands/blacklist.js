@@ -1,10 +1,8 @@
-// v2.3.0
-const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, InteractionResponseFlags, MessageFlags } = require('discord.js');
+//v2.5.5
+const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, /*InteractionResponseFlags,*/ MessageFlags } = require('discord.js');
 const chunk = require('lodash.chunk');
 const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
-
-const PAGE_SIZE = 20;
 
 function makeUniqueId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -13,23 +11,28 @@ function makeUniqueId() {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('blacklist')
-        .setDescription('Manage channel blacklist.'),
+        .setDescription('Blacklist channels from AutoLocking.'),
     name: 'blacklist',
     aliases: ['bl'],
 
     async execute(msg, args, client) {
+        if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+            return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
         const prefix = await getPrefixForServer(msg.guild.id);
-        if (
-            !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-            !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
-            msg.author.id !== Seal
-        ) {
-            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
-        }
+        // if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+        //     !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
+        //     msg.author.id !== Seal) {
+        //     return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+        // }
 
         // Handle legacy add/remove/clear quick commands
         const sub = args[0]?.toLowerCase();
         if ((sub === 'add' || sub === 'a') && args.length > 1) {
+            if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                msg.author.id !== Seal) {
+                return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+            }
             args.shift();
             let blacklisted = await loadBlacklistedChannels(msg.guild.id) || [];
             const added = [];
@@ -44,6 +47,11 @@ module.exports = {
             return msg.channel.send(added.length ? `Added: ${added.join(' ')} to the blacklist!` : 'No new channels were added.');
         }
         if ((sub === 'remove' || sub === 'r') && args.length > 1) {
+            if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                msg.author.id !== Seal) {
+                return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+            }
             args.shift();
             let blacklisted = await loadBlacklistedChannels(msg.guild.id) || [];
             const removed = [];
@@ -58,6 +66,11 @@ module.exports = {
             return msg.channel.send(removed.length ? `Removed: ${removed.join(' ')} from the blacklist!` : 'No channels were removed.');
         }
         if (sub === 'clear' || sub === 'c') {
+            if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                msg.author.id !== Seal) {
+                return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+            }
             let blacklisted = await loadBlacklistedChannels(msg.guild.id) || [];
             if (!blacklisted.length) return msg.channel.send('There are no blacklisted channels to clear.');
             const uniqueId = makeUniqueId();
@@ -84,7 +97,7 @@ module.exports = {
                     const disabledRow = new ActionRowBuilder().addComponents(
                         ...confirmRow.components.map(b => ButtonBuilder.from(b).setDisabled(true))
                     );
-                    await confirmMsg.edit({ components: [disabledRow] }).catch(() => {});
+                    await confirmMsg.edit({ components: [disabledRow] }).catch(() => { });
                 }
             });
             return;
@@ -95,13 +108,13 @@ module.exports = {
     },
 
     async executeInteraction(interaction, client) {
-        if (
-            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-            !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
-            interaction.user.id !== Seal
-        ) {
-            return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: InteractionResponseFlags.Ephemeral });
-        }
+        if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+            return interaction.reply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
+        // if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+        //     !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
+        //     interaction.user.id !== Seal) {
+        //     return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+        // }
         await module.exports.showBlacklistUI(interaction.channel, interaction.user.id, interaction.guild.id, interaction);
     },
 
@@ -109,7 +122,7 @@ module.exports = {
     async showBlacklistUI(channel, userId, guildId, interaction) {
         let blacklisted = await loadBlacklistedChannels(guildId) || [];
         let page = 0;
-        const getPages = () => chunk(blacklisted, PAGE_SIZE);
+        const getPages = () => chunk(blacklisted, 20);
         const getEmbed = (p = 0) => {
             const pages = getPages();
             const desc = pages[p]?.length
@@ -165,6 +178,11 @@ module.exports = {
                 await i.update({ embeds: [getEmbed(page)], components: [getRow(page)] });
             }
             else if (i.customId === 'bl_add') {
+                if (!i.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                    !i.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                    i.user.id !== Seal) {
+                    return i.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+                }
                 const addRow = new ActionRowBuilder().addComponents(
                     new ChannelSelectMenuBuilder()
                         .setCustomId('bl_add_select')
@@ -201,6 +219,11 @@ module.exports = {
                 });
             }
             else if (i.customId === 'bl_remove') {
+                if (!i.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                    !i.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                    i.user.id !== Seal) {
+                    return i.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+                }
                 if (!blacklisted.length) return;
                 const removeRow = new ActionRowBuilder().addComponents(
                     new ChannelSelectMenuBuilder()
@@ -238,6 +261,11 @@ module.exports = {
                 });
             }
             else if (i.customId === 'bl_clear') {
+                if (!i.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+                    !i.member.permissions.has(PermissionFlagsBits.Administrator) &&
+                    i.user.id !== Seal) {
+                    return i.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+                }
                 const uniqueId = makeUniqueId();
                 const confirmRow = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId(`bl_clear_confirm_${uniqueId}`).setLabel('Confirm').setStyle(ButtonStyle.Danger),
@@ -268,7 +296,7 @@ module.exports = {
                         const disabledRow = new ActionRowBuilder().addComponents(
                             ...confirmRow.components.map(b => ButtonBuilder.from(b).setDisabled(true))
                         );
-                        await confirmMsg.edit({ components: [disabledRow] }).catch(() => {});
+                        await confirmMsg.edit({ components: [disabledRow] }).catch(() => { });
                     }
                 });
             }
@@ -278,7 +306,7 @@ module.exports = {
             const disabledRow = new ActionRowBuilder().addComponents(
                 ...getRow(page).components.map(b => ButtonBuilder.from(b).setDisabled(true))
             );
-            sent.edit({ components: [disabledRow] }).catch(() => {});
+            sent.edit({ components: [disabledRow] }).catch(() => { });
         });
     }
 };

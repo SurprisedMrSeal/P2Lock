@@ -1,4 +1,4 @@
-//v2.5.3
+//v2.5.5
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const chunk = require('lodash.chunk');
 const { P2, embedColor } = require('../utils');
@@ -11,11 +11,13 @@ module.exports = {
     aliases: ['ll'],
     async execute(msg, args, client) {
         try {
+            if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+                return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
             const guildChannels = await msg.guild.channels.fetch();
             const lockedChannels = [...guildChannels.filter(channel => {
-            if (!channel.permissionOverwrites || !channel.permissionOverwrites.cache) return false;
-            const permissions = channel.permissionOverwrites.cache.get(P2);
-            return permissions && permissions.deny.has(PermissionFlagsBits.ViewChannel);
+                if (!channel.permissionOverwrites || !channel.permissionOverwrites.cache) return false;
+                const permissions = channel.permissionOverwrites.cache.get(P2);
+                return permissions && permissions.deny.has(PermissionFlagsBits.ViewChannel);
             }).values()];
 
             if (lockedChannels.length === 0) {
@@ -58,7 +60,7 @@ module.exports = {
                     filter: i => {
                         if (!['locklist_prev', 'locklist_next'].includes(i.customId) || i.user.bot) return false;
                         if (i.user.id === originalUserId) return true;
-                        i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => {});
+                        i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => { });
                         return false;
                     },
                     time: 1000 * 60 * 3 // 3 minutes
@@ -77,7 +79,7 @@ module.exports = {
                     const disabledRow = new ActionRowBuilder().addComponents(
                         row.components.map(b => ButtonBuilder.from(b).setDisabled(true))
                     );
-                    sent.edit({ components: [disabledRow] }).catch(() => {});
+                    sent.edit({ components: [disabledRow] }).catch(() => { });
                 });
             }
         } catch (error) {
@@ -89,6 +91,8 @@ module.exports = {
     async executeInteraction(interaction, client) {
         await interaction.deferReply();
         try {
+            if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+                return interaction.editReply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
             const guildChannels = await interaction.guild.channels.fetch();
             const lockedChannels = [...guildChannels.filter(channel => {
                 if (!channel.permissionOverwrites || !channel.permissionOverwrites.cache) return false;
@@ -132,7 +136,7 @@ module.exports = {
                     filter: i => {
                         if (!['locklist_prev', 'locklist_next'].includes(i.customId) || i.user.bot) return false;
                         if (i.user.id === originalUserId) return true;
-                        i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => {});
+                        i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => { });
                         return false;
                     },
                     time: 1000 * 60 * 3 // 3 minutes
@@ -151,7 +155,7 @@ module.exports = {
                     const disabledRow = new ActionRowBuilder().addComponents(
                         row.components.map(b => ButtonBuilder.from(b).setDisabled(true))
                     );
-                    sent.edit({ components: [disabledRow] }).catch(() => {});
+                    sent.edit({ components: [disabledRow] }).catch(() => { });
                 });
             }
         } catch (error) {

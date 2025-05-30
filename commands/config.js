@@ -1,12 +1,12 @@
-//v2.2.3
-const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } = require('discord.js');
+//v2.5.5
+const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getDelay, getTimer, updatePrefixForServer, updateDelay, updateTimer, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('config')
-        .setDescription('View or change server configuration.')
+        .setDescription('View or change LockDelay, UnlockTimer and Prefix.')
         .addStringOption(opt =>
             opt.setName('type')
                 .setDescription('Configuration type to change (prefix, delay, unlocktimer)')
@@ -30,15 +30,9 @@ module.exports = {
         const timer = await getTimer(msg.guild.id);
         const prefix = await getPrefixForServer(msg.guild.id);
 
-        if (
-            !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-            !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
-            msg.author.id !== Seal
-        ) {
-            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
-        }
-
         if (args.length !== 2) {
+            if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+                return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
             const embed = new EmbedBuilder()
                 .setTitle('Configurable settings:')
                 .setDescription(`**Prefix:** \`${prefix}\` or <@!${client.user.id}>\n\n**LockDelay:** \`${delay}\`s\n\n**UnlockTimer:** \`${timer}\`min`)
@@ -46,6 +40,14 @@ module.exports = {
                 .setFooter({ text: `Usage: "${prefix}config <prefix|delay|timer> <value>"` });
 
             return msg.channel.send({ embeds: [embed] });
+        }
+
+        if (
+            !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+            !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
+            msg.author.id !== Seal
+        ) {
+            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
         }
 
         const [type, value] = [args[0].toLowerCase(), args[1]];
@@ -74,7 +76,7 @@ module.exports = {
                 return msg.channel.send('❕ Must be a `number` between `0` and `1440` minutes.');
             }
             updateTimer(msg.guild.id, newTimer)
-                .then(() => msg.channel.send(`UnlockTimer updated to \`${newTimer}\` minutes.\n\n❕By Setting an UnlockTimer, you acknowledge that channel details from this server will be stored for up to 48hrs before being automatically deleted. If you object, set the value to \`0\`❕`))
+                .then(() => msg.channel.send(`UnlockTimer updated to \`${newTimer}\` minutes.`))
                 .catch(error => {
                     console.error('(Config) Error updating timer:', error);
                     msg.channel.send('⚠️ An error occurred while updating the timer.');
@@ -84,17 +86,7 @@ module.exports = {
         }
     },
 
-    async executeInteraction(interaction) {
-        if (
-            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-            !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
-            interaction.user.id !== Seal
-        ) {
-            return interaction.reply({
-                content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.',
-                ephemeral: false
-            });
-        }
+    async executeInteraction(interaction, client) {
 
         const type = interaction.options.getString('type');
         const value = interaction.options.getString('value');
@@ -103,12 +95,14 @@ module.exports = {
         if (!type || !value) {
             // Defer the reply to prevent timeout
             await interaction.deferReply();
-            
+
             try {
+                if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+                    return interaction.editReply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
                 const delay = await getDelay(interaction.guild.id);
                 const timer = await getTimer(interaction.guild.id);
                 const prefix = await getPrefixForServer(interaction.guild.id);
-                
+
                 const embed = new EmbedBuilder()
                     .setTitle('Configurable settings:')
                     .setDescription(
@@ -126,9 +120,20 @@ module.exports = {
             }
         }
 
+        if (
+            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
+            !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
+            interaction.user.id !== Seal
+        ) {
+            return interaction.reply({
+                content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.',
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         // If we're updating a value, defer the reply first
         await interaction.deferReply();
-        
+
         try {
             if (type === 'prefix') {
                 await updatePrefixForServer(interaction.guild.id, value);
@@ -146,7 +151,7 @@ module.exports = {
                     return interaction.editReply({ content: '❕ Must be a `number` between `0` and `1440` minutes.' });
                 }
                 await updateTimer(interaction.guild.id, newTimer);
-                return interaction.editReply({ content: `UnlockTimer updated to \`${newTimer}\` minutes.\n\n❕By Setting an UnlockTimer, you acknowledge that channel details from this server will be stored for up to 48hrs before being automatically deleted. If you object, set the value to \`0\`❕` });
+                return interaction.editReply({ content: `UnlockTimer updated to \`${newTimer}\` minutes.` });
             } else {
                 return interaction.editReply({ content: '❕ Invalid configuration type.' });
             }

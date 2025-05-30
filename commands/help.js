@@ -1,22 +1,22 @@
-//v2.5.1
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
+//v2.5.5
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime } = require('../utils');
 
 // Common command definitions
 const commandDefs = prefix => [
-  { name: 'help',     description: `Shows this menu.\n\`${prefix}help\`` },
-  { name: 'ping',     description: `Displays the bot's latency.\n\`${prefix}ping\`` },
-  { name: 'lock',     description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
-  { name: 'unlock',   description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
-  { name: 'config',   description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config <> []\`` },
-  { name: 'toggle',   description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
-  { name: 'pingafk',  description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+  { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
+  { name: 'ping', description: `Displays the bot's latency.\n\`${prefix}ping\`` },
+  { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
+  { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
+  { name: 'config', description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config <> []\`` },
+  { name: 'toggle', description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
+  { name: 'pingafk', description: `[Pings the afk members using Poké-Name.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
   { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
-  { name: 'blacklist',description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
-  { name: 'suggest',  description: `Sends your suggestion to the developer.\n\`${prefix}suggest []\`` },
-  { name: 'report',   description: `Sends your report to the developer.\n\`${prefix}report []\`` },
-  { name: 'info',     description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
+  { name: 'blacklist', description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
+  { name: 'suggest', description: `Sends your suggestion to the developer.\n\`${prefix}suggest []\`` },
+  { name: 'report', description: `Sends your report to the developer.\n\`${prefix}report []\`` },
+  { name: 'info', description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
 ];
 
 // Pagination and embed builder
@@ -50,6 +50,8 @@ module.exports = {
   data: new SlashCommandBuilder().setName('help').setDescription('Shows a list of commands and their aliases.'),
 
   async execute(msg, args, client) {
+    if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+      return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
     let page = 1;
     const { embed, totalPages } = await buildPagedEmbed(msg.member.user, msg.guild.id, client, page);
     const sent = await msg.channel.send({ embeds: [embed], components: totalPages > 1 ? [navRow] : [] });
@@ -57,6 +59,8 @@ module.exports = {
   },
 
   async executeInteraction(interaction, client) {
+    if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
+    return interaction.reply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
     let page = 1;
     const { embed, totalPages } = await buildPagedEmbed(interaction.user, interaction.guild.id, client, page);
     await interaction.reply({ embeds: [embed], components: totalPages > 1 ? [navRow] : [] });
@@ -68,7 +72,7 @@ module.exports = {
 function handleCollector(message, channel, client, originalUserId) {
   const filter = i => {
     if (i.user.id === originalUserId) return true;
-    i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => {});
+    i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => { });
     return false;
   };
 
@@ -100,6 +104,6 @@ function handleCollector(message, channel, client, originalUserId) {
     const disabled = new ActionRowBuilder().addComponents(
       navRow.components.map(btn => ButtonBuilder.from(btn).setDisabled(true))
     );
-    message.edit({ components: [disabled] }).catch(() => {});
+    message.edit({ components: [disabled] }).catch(() => { });
   });
 }
