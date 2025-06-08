@@ -1,5 +1,6 @@
-//v2.5.5
+//v2.5.6
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
+const { getActiveLocks } = require('../mongoUtils');
 const chunk = require('lodash.chunk');
 const { P2, embedColor } = require('../utils');
 
@@ -25,7 +26,7 @@ module.exports = {
             }
             lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
 
-            const paginatedChannels = chunk(lockedChannels, 20);
+            const paginatedChannels = chunk(lockedChannels, 10);
             const totalLockedChannels = lockedChannels.length;
             let currentPage = 0;
             const embed = new EmbedBuilder()
@@ -33,16 +34,20 @@ module.exports = {
                 .setTitle(`Locked Channels (${totalLockedChannels})`)
                 .setFooter({ text: `Page ${currentPage + 1}/${paginatedChannels.length}  (${paginatedChannels[currentPage].length} on this page)` });
 
-            // button-based pagination
+            const activeLocks = await getActiveLocks(client.user.id);
+            const lockMap = new Map(activeLocks.map(lock => [lock.channelId, lock.unlockTime]));
+
             const buildFields = page => {
-                const grp1 = paginatedChannels[page].slice(0, 10);
-                const grp2 = paginatedChannels[page].slice(10, 20);
-                const f1 = grp1.length ? grp1.map(c => `<#${c.id}>`).join('\n') : '\u200b';
-                const f2 = grp2.length ? grp2.map(c => `<#${c.id}>`).join('\n') : '\u200b';
-                embed.setFields(
-                    { name: '\u200b', value: f1, inline: true },
-                    { name: '\u200b', value: f2, inline: true }
-                );
+                const group = paginatedChannels[page];
+
+                const format = c => {
+                    const unlock = lockMap.get(c.id);
+                    return unlock ? `<#${c.id}> — <t:${unlock}:R>\n` : `<#${c.id}>\n`;
+                };
+
+                const fieldContent = group.map(format).join('\n') || 'There are no locked channels.';
+
+                embed.setFields({ name: '\u200b', value: fieldContent });
             };
 
             const row = new ActionRowBuilder().addComponents(
@@ -53,7 +58,6 @@ module.exports = {
             buildFields(currentPage);
             const sent = await msg.channel.send({ embeds: [embed], components: paginatedChannels.length > 1 ? [row] : [] });
 
-            // --- Only allow the message sender to use the buttons ---
             if (paginatedChannels.length > 1) {
                 const originalUserId = msg.member.user.id;
                 const collector = sent.createMessageComponentCollector({
@@ -63,7 +67,7 @@ module.exports = {
                         i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => { });
                         return false;
                     },
-                    time: 1000 * 60 * 3 // 3 minutes
+                    time: 1000 * 60 * 3
                 });
                 collector.on('collect', async i => {
                     currentPage = i.customId === 'locklist_prev'
@@ -75,7 +79,6 @@ module.exports = {
                     await i.update({ embeds: [embed], components: [row] });
                 });
                 collector.on('end', () => {
-                    // disable pagination buttons
                     const disabledRow = new ActionRowBuilder().addComponents(
                         row.components.map(b => ButtonBuilder.from(b).setDisabled(true))
                     );
@@ -104,23 +107,30 @@ module.exports = {
                 return interaction.editReply('There are no locked channels.');
             }
             lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
-            const paginatedChannels = chunk(lockedChannels, 20);
+            const paginatedChannels = chunk(lockedChannels, 10);
             const totalLockedChannels = lockedChannels.length;
             let currentPage = 0;
             const embed = new EmbedBuilder()
                 .setColor(embedColor)
                 .setTitle(`Locked Channels (${totalLockedChannels})`)
                 .setFooter({ text: `Page ${currentPage + 1}/${paginatedChannels.length} (${paginatedChannels[currentPage].length} on this page)` });
+
+            const activeLocks = await getActiveLocks(client.user.id);
+            const lockMap = new Map(activeLocks.map(lock => [lock.channelId, lock.unlockTime]));
+
             const buildFields = page => {
-                const grp1 = paginatedChannels[page].slice(0, 10);
-                const grp2 = paginatedChannels[page].slice(10, 20);
-                const f1 = grp1.length ? grp1.map(c => `<#${c.id}>`).join('\n') : '\u200b';
-                const f2 = grp2.length ? grp2.map(c => `<#${c.id}>`).join('\n') : '\u200b';
-                embed.setFields(
-                    { name: '\u200b', value: f1, inline: true },
-                    { name: '\u200b', value: f2, inline: true }
-                );
+                const group = paginatedChannels[page];
+
+                const format = c => {
+                    const unlock = lockMap.get(c.id);
+                    return unlock ? `<#${c.id}> — <t:${unlock}:R>\n` : `<#${c.id}>\n`;
+                };
+
+                const fieldContent = group.map(format).join('\n') || 'There are no locked channels.';
+
+                embed.setFields({ name: '\u200b', value: fieldContent });
             };
+
             buildFields(currentPage);
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId('locklist_prev').setEmoji('◀️').setStyle(ButtonStyle.Secondary),
@@ -129,7 +139,6 @@ module.exports = {
             await interaction.editReply({ embeds: [embed], components: paginatedChannels.length > 1 ? [row] : [] });
             const sent = await interaction.fetchReply();
 
-            // --- Only allow the command user to use the buttons ---
             if (paginatedChannels.length > 1) {
                 const originalUserId = interaction.user.id;
                 const collector = sent.createMessageComponentCollector({
@@ -139,7 +148,7 @@ module.exports = {
                         i.reply({ content: "Not for you 👀", flags: MessageFlags.Ephemeral }).catch(() => { });
                         return false;
                     },
-                    time: 1000 * 60 * 3 // 3 minutes
+                    time: 1000 * 60 * 3
                 });
                 collector.on('collect', async i => {
                     currentPage = i.customId === 'locklist_prev'

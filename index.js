@@ -1,4 +1,4 @@
-//v2.5.4
+//v2.5.6
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -98,7 +98,7 @@ client.on('ready', async () => {
                         } else {
                         // No overwrite, check effective permissions
                         const permissions = channel.permissionsFor(P2);
-                        if (permissions.has(PermissionFlagsBits.ViewChannel) && permissions.has(PermissionFlagsBits.SendMessages)) {
+                        if (permissions && permissions.has(PermissionFlagsBits.ViewChannel) && permissions.has(PermissionFlagsBits.SendMessages)) {
                             await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
                             continue;
                         }
@@ -255,19 +255,19 @@ async function handleUnlockButton(interaction) {
         const targetMember = await interaction.guild.members.fetch(P2).catch(() => null);
 
         if (!targetMember) {
-            return interaction.followUp({ content: '⚠️ Could not find the target member to unlock.', flags: MessageFlags.Ephemeral });
+            return interaction.followUp({ content: `⚠️ Could not find <@${P2}> to unlock.`, flags: MessageFlags.Ephemeral });
         }
 
         const overwrite = channel.permissionOverwrites.cache.get(P2);
         if (overwrite && overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
+            await removeActiveLock(interaction.guild.id, global.BotID, channel.id);
+            
             await channel.permissionOverwrites.edit(P2, { ViewChannel: true, SendMessages: true });
 
             await interaction.followUp({
                 content: `This channel has been unlocked by <@${interaction.user.id}>!`,
                 allowedMentions: { users: [] }
-            });
-
-            await removeActiveLock(interaction.guild.id, global.BotID, channel.id);
+            }).catch(console.error);
 
             const row = ActionRowBuilder.from(interaction.message.components[0]);
             row.components[0].setDisabled(true);
