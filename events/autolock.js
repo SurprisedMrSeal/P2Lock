@@ -1,7 +1,10 @@
-//v2.5.6
+//v2.5.7
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
+
+const channelCooldowns = new Map();
+const CHANNEL_COOLDOWN_MS = 5 * 1000;
 
 module.exports = {
     name: 'messageCreate',
@@ -28,6 +31,18 @@ module.exports = {
                     && (msg.content.includes(':') || msg.content.includes('#')))
             )
         ) {
+            const now = Date.now();
+            const cooldownUntil = channelCooldowns.get(msg.channel.id) || 0;
+
+            if (now < cooldownUntil) {
+                //console.log(`⏳ Skipping lock attempt in #${msg.channel.name} due to cooldown.`);
+                return;
+            }
+
+            channelCooldowns.set(msg.channel.id, now + CHANNEL_COOLDOWN_MS);
+            setTimeout(() => channelCooldowns.delete(msg.channel.id), CHANNEL_COOLDOWN_MS);
+
+
             if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
                 return msg.channel.send('⚠️ Error: I don\'t have the `Manage Permissions` permission to lock this channel.');
             }
@@ -44,7 +59,13 @@ module.exports = {
 
                     warningMessage = await msg.channel.send(`⏳ This channel will be locked <t:${lockTime}:R>`);
 
-                    const filter = m => m.author.id === P2 || m.mentions.has(P2);
+                    const filter = m =>
+                        m.author.id === P2 ||
+                        (
+                            m.mentions.has(P2) &&
+                            !m.reference &&
+                            !m.author.bot
+                        );
 
                     const collector = msg.channel.createMessageCollector({
                         filter,

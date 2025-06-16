@@ -1,4 +1,4 @@
-//v2.5.5
+//v2.5.7
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
@@ -83,7 +83,7 @@ module.exports = {
                     return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
                 }
                 toggleableFeatures.includeEventPings = !toggleableFeatures.includeEventPings;
-                msg.channel.send(`${toggleableFeatures.includeEventPings ? '🟩' : '⬛'} **Event Lock** toggled ${toggleableFeatures.includeEventPings ? 'on' : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeEventPings ? '🟩' : '⬛'} **Event Lock** toggled ${toggleableFeatures.includeEventPings ? 'on.\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable)' : 'off'}.`);
                 break;
             case 'quest':
             case 'quest lock':
@@ -161,11 +161,9 @@ module.exports = {
     },
 
     async executeInteraction(interaction, client) {
-        // load stored settings
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const setting = interaction.options.getString('setting');
         const state = interaction.options.getBoolean('state');
-        // no setting provided: show list embed
         if (!setting) {
             const featureDisplayName = {
                 includeShinyHuntPings: 'Shiny Lock\n`Toggle whether it locks for Shinyhunt Pings.`',
@@ -193,18 +191,15 @@ module.exports = {
                 return interaction.reply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
 
             return interaction.reply({ embeds: [embed] });
-        }// permission check
+        }
         if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
             !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
             interaction.user.id !== Seal) {
             return interaction.reply({ content: '❌ You must have `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
         }
-        // determine new state: if explicit, use provided; otherwise invert
         const currentState = toggleableFeatures[setting];
         const newState = (state === null ? !currentState : state);
-        // apply and save
         toggleableFeatures[setting] = newState;
-        // defer reply to allow DB save
         await interaction.deferReply();
         try {
             await saveToggleableFeatures(interaction.guild.id, toggleableFeatures);
@@ -222,7 +217,14 @@ module.exports = {
             };
             const name = displayNames[setting] || setting;
             const emoji = newState ? '🟩' : '⬛';
-            return interaction.editReply({ content: `${emoji} **${name}** toggled ${newState ? 'on' : 'off'}.` });
+
+            let message = `${emoji} **${name}** toggled ${newState ? 'on' : 'off'}.`;
+            if (setting === 'includeEventPings' && newState === true) {
+                message += `\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`;
+            }
+
+            return interaction.editReply({ content: message });
+
         } catch (error) {
             console.error('(Toggle Interaction) Error updating config:', error);
             return interaction.editReply({ content: '⚠️ There was an error toggling that setting.' });

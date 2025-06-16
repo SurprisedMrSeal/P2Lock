@@ -1,4 +1,4 @@
-//v2.5.6
+//v2.5.7
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -51,7 +51,7 @@ client.on('ready', async () => {
             activities: [{ name: `@P2Lock help | 🔒`, type: ActivityType.Playing }],
             status: 'idle'
         });
-        
+
         global.BotID = client.user.id;
 
         const rest = new REST({ version: '10' }).setToken(process.env.token);
@@ -89,19 +89,19 @@ client.on('ready', async () => {
                     try {
                         const overwrite = channel.permissionOverwrites.cache.get(P2);
                         if (overwrite) {
-                        const deniedView = overwrite.deny.has(PermissionFlagsBits.ViewChannel);
-                        const deniedSend = overwrite.deny.has(PermissionFlagsBits.SendMessages);
-                        if (!deniedView && !deniedSend) {
-                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
-                            continue;
-                        }
+                            const deniedView = overwrite.deny.has(PermissionFlagsBits.ViewChannel);
+                            const deniedSend = overwrite.deny.has(PermissionFlagsBits.SendMessages);
+                            if (!deniedView && !deniedSend) {
+                                await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
+                                continue;
+                            }
                         } else {
-                        // No overwrite, check effective permissions
-                        const permissions = channel.permissionsFor(P2);
-                        if (permissions && permissions.has(PermissionFlagsBits.ViewChannel) && permissions.has(PermissionFlagsBits.SendMessages)) {
-                            await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
-                            continue;
-                        }
+                            // No overwrite, check effective permissions
+                            const permissions = channel.permissionsFor(P2);
+                            if (permissions && permissions.has(PermissionFlagsBits.ViewChannel) && permissions.has(PermissionFlagsBits.SendMessages)) {
+                                await removeActiveLock(lock.guildId, lock.botId, lock.channelId);
+                                continue;
+                            }
                         }
 
                     } catch (error) {
@@ -162,8 +162,13 @@ client.on('ready', async () => {
 });
 
 // Prefix commands
-client.on('messageCreate', async msg => {
+
+const cooldowns = new Map();
+const COOLDOWN_TIME = 1.5 * 1000;
+
+async function handlePrefixCommand(msg) {
     if (msg.author.bot || !msg.guild) return;
+
     try {
         const prefix = await getPrefixForServer(msg.guild.id);
         const content = msg.content.trim();
@@ -172,12 +177,14 @@ client.on('messageCreate', async msg => {
         if (prefix && content.startsWith(prefix)) {
             usedPrefix = prefix;
         }
+
         if (!usedPrefix) {
             const mentionMatch = content.match(/^<@!?(\d+)>/);
             if (mentionMatch && mentionMatch[1] === client.user.id) {
                 usedPrefix = mentionMatch[0];
             }
         }
+
         if (!usedPrefix) return;
 
         const args = content.slice(usedPrefix.length).trim().split(/\s+/);
@@ -185,13 +192,29 @@ client.on('messageCreate', async msg => {
         if (!cmd) return;
         const command = client.commands.get(cmd);
         if (command && command.execute) {
+
+            const now = Date.now();
+            const cooldownKey = `${msg.guild.id}-${msg.author.id}`;
+
+            if (cooldowns.has(cooldownKey)) {
+                const expiration = cooldowns.get(cooldownKey);
+                if (now < expiration) {
+                    const remaining = ((expiration - now) / 1000).toFixed(1);
+                    return msg.react('🕜').catch(() => {});
+                }
+            }
+
+            cooldowns.set(cooldownKey, now + COOLDOWN_TIME);
+            setTimeout(() => cooldowns.delete(cooldownKey), COOLDOWN_TIME);
+
             if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) ||
-            !msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) {
-            msg.react('🤐')
-            msg.author.send('⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐')
-            .catch(() => {});
-            return;
-        }
+                !msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) {
+                msg.react('🤐');
+                msg.author.send('⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐')
+                    .catch(() => { });
+                return;
+            }
+
             await command.execute(msg, args, client);
         }
     } catch (error) {
@@ -200,16 +223,35 @@ client.on('messageCreate', async msg => {
             msg.reply('⚠️ Hmm, something prevented me from executing this command, try again later.').catch(console.error);
         }
     }
+}
+
+const recentMessages = new Map();
+
+client.on('messageCreate', async msg => {
+    if (msg.author.bot || !msg.guild) return;
+
+    recentMessages.set(msg.id, Date.now());
+    setTimeout(() => recentMessages.delete(msg.id), 10 * 1000);
+
+    await handlePrefixCommand(msg);
+});
+
+client.on('messageUpdate', async (oldMsg, newMsg) => {
+    if (!newMsg.guild || newMsg.author?.bot) return;
+    if (oldMsg.content === newMsg.content) return;
+    if (!recentMessages.has(newMsg.id)) return;
+
+    await handlePrefixCommand(newMsg);
 });
 
 // Slash commands and button interactions
 client.on('interactionCreate', async interaction => {
     try {
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) ||
-            !interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel)) 
+            !interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel))
             return interaction.reply({ content: "⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐", flags: MessageFlags.Ephemeral });
-        
-        if (!interaction.inGuild()) 
+
+        if (!interaction.inGuild())
             return interaction.reply({ content: '⚠️ This command cannot be run inside DMs :(' });
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
@@ -241,8 +283,8 @@ async function handleUnlockButton(interaction) {
             return interaction.followUp({ content: '⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
 
-        if (toggleableFeatures.adminMode && 
-            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && 
+        if (toggleableFeatures.adminMode &&
+            !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
             !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.followUp({ content: '❌ You must have the `Manage Server` or `Administrator` permission to use this.', flags: MessageFlags.Ephemeral });
         }
@@ -261,15 +303,8 @@ async function handleUnlockButton(interaction) {
         const overwrite = channel.permissionOverwrites.cache.get(P2);
         if (overwrite && overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
             await removeActiveLock(interaction.guild.id, global.BotID, channel.id);
-            
-            await channel.permissionOverwrites.edit(P2, { ViewChannel: true, SendMessages: true });
 
-            await interaction.followUp({
-                content: `This channel has been unlocked by <@${interaction.user.id}>!`,
-                allowedMentions: { users: [] }
-            }).catch(console.error);
-
-            const row = ActionRowBuilder.from(interaction.message.components[0]);
+nRowBuilder.from(interaction.message.components[0]);
             row.components[0].setDisabled(true);
             await interaction.message.edit({ components: [row] });
         } else {
