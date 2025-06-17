@@ -1,4 +1,4 @@
-//v2.5.7
+//v2.5.7.1
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -200,7 +200,7 @@ async function handlePrefixCommand(msg) {
                 const expiration = cooldowns.get(cooldownKey);
                 if (now < expiration) {
                     const remaining = ((expiration - now) / 1000).toFixed(1);
-                    return msg.react('🕜').catch(() => {});
+                    return msg.react('🕜').catch(() => { });
                 }
             }
 
@@ -304,7 +304,14 @@ async function handleUnlockButton(interaction) {
         if (overwrite && overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
             await removeActiveLock(interaction.guild.id, global.BotID, channel.id);
 
-nRowBuilder.from(interaction.message.components[0]);
+            await channel.permissionOverwrites.edit(P2, { ViewChannel: true, SendMessages: true });
+
+            await interaction.followUp({
+                content: `This channel has been unlocked by <@${interaction.user.id}>!`,
+                allowedMentions: { users: [] }
+            }).catch(console.error);
+
+            const row = ActionRowBuilder.from(interaction.message.components[0]);
             row.components[0].setDisabled(true);
             await interaction.message.edit({ components: [row] });
         } else {
