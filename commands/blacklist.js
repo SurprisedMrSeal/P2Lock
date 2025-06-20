@@ -1,4 +1,4 @@
-//v2.6.2
+//v2.6.1
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, /*InteractionResponseFlags,*/ MessageFlags } = require('discord.js');
 const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
