@@ -1,4 +1,4 @@
-//v2.4.4
+//v2.6.0
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const { prefix } = require('./utils');
@@ -117,7 +117,11 @@ async function loadToggleableFeatures(guildId) {
     try {
         const toggleableCollection = mongoClient.db(DB).collection('toggleable_features');
         const document = await toggleableCollection.findOne({ _id: guildId });
-        return document ? document.features : getDefaultToggleableFeatures();
+
+        const defaults = getDefaultToggleableFeatures();
+        const stored = document?.features || {};
+
+        return { ...defaults, ...stored };
     } catch (error) {
         console.error('Error loading toggleable features from MongoDB:', error);
         return getDefaultToggleableFeatures();
@@ -133,6 +137,7 @@ function getDefaultToggleableFeatures() {
         includeEventPings: false,
         includeQuestPings: false,
         includeTypePings: false,
+        lockAfk: true,
         pingAfk: true,
         autoPin: false,
         adminMode: false,
