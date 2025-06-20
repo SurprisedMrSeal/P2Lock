@@ -1,8 +1,15 @@
-//v2.5.6
+//v2.6.1
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getActiveLocks } = require('../mongoUtils');
-const chunk = require('lodash.chunk');
 const { P2, embedColor } = require('../utils');
+
+function chunk(array, size) {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+    }
+    return result;
+}
 
 module.exports = {
     data: new SlashCommandBuilder()

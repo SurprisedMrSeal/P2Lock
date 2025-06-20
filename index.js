@@ -1,4 +1,4 @@
-//v2.5.7.1
+//v2.6.1
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -247,12 +247,13 @@ client.on('messageUpdate', async (oldMsg, newMsg) => {
 // Slash commands and button interactions
 client.on('interactionCreate', async interaction => {
     try {
+        if (!interaction.inGuild())
+            return interaction.reply({ content: '⚠️ This command cannot be run inside DMs :(' });
+
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) ||
             !interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ViewChannel))
             return interaction.reply({ content: "⚠️ I need the `Send Messages` and `View Channel` permissions to run this command! 🤐", flags: MessageFlags.Ephemeral });
 
-        if (!interaction.inGuild())
-            return interaction.reply({ content: '⚠️ This command cannot be run inside DMs :(' });
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command || !command.executeInteraction) return;
