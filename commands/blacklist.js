@@ -1,11 +1,18 @@
-//v2.5.5
+//v2.6.2
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, /*InteractionResponseFlags,*/ MessageFlags } = require('discord.js');
-const chunk = require('lodash.chunk');
 const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
 
 function makeUniqueId() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+function chunk(array, size) {
+    const result = [];
+    for (let i = 0; i < array.length; i += size) {
+        result.push(array.slice(i, i + size));
+    }
+    return result;
 }
 
 module.exports = {
