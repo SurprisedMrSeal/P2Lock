@@ -1,4 +1,4 @@
-//v2.6.1
+//v2.6.2
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags } = require('discord.js');
 const { getActiveLocks } = require('../mongoUtils');
 const { P2, embedColor } = require('../utils');
@@ -31,7 +31,6 @@ module.exports = {
             if (lockedChannels.length === 0) {
                 return msg.channel.send('There are no locked channels.');
             }
-            lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
 
             const paginatedChannels = chunk(lockedChannels, 10);
             const totalLockedChannels = lockedChannels.length;
@@ -43,6 +42,16 @@ module.exports = {
 
             const activeLocks = await getActiveLocks(client.user.id);
             const lockMap = new Map(activeLocks.map(lock => [lock.channelId, lock.unlockTime]));
+            lockedChannels.sort((a, b) => {
+                const aUnlock = lockMap.get(a.id);
+                const bUnlock = lockMap.get(b.id);
+
+                if (!aUnlock && !bUnlock) return 0;
+                if (!aUnlock) return -1;
+                if (!bUnlock) return 1;
+
+                return aUnlock - bUnlock;
+            });
 
             const buildFields = page => {
                 const group = paginatedChannels[page];
@@ -113,7 +122,6 @@ module.exports = {
             if (lockedChannels.length === 0) {
                 return interaction.editReply('There are no locked channels.');
             }
-            lockedChannels.sort((a, b) => b.lastModifiedTimestamp - a.lastModifiedTimestamp);
             const paginatedChannels = chunk(lockedChannels, 10);
             const totalLockedChannels = lockedChannels.length;
             let currentPage = 0;
@@ -124,6 +132,17 @@ module.exports = {
 
             const activeLocks = await getActiveLocks(client.user.id);
             const lockMap = new Map(activeLocks.map(lock => [lock.channelId, lock.unlockTime]));
+
+            lockedChannels.sort((a, b) => {
+                const aUnlock = lockMap.get(a.id);
+                const bUnlock = lockMap.get(b.id);
+
+                if (!aUnlock && !bUnlock) return 0;
+                if (!aUnlock) return -1;
+                if (!bUnlock) return 1;
+
+                return aUnlock - bUnlock;
+            });
 
             const buildFields = page => {
                 const group = paginatedChannels[page];
