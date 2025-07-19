@@ -1,4 +1,4 @@
-//v2.5.4
+//v2.7.2
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -8,10 +8,19 @@ module.exports = {
     name: 'unlock',
     aliases: ['ul', 'u'],
     async execute(msg, args, client) {
-        const member = await msg.guild.members.fetch(P2);
-        if (!member) {
-        return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
+        try {
+            const member = await msg.guild.members.fetch(P2);
+            if (!member) {
+                return msg.reply({
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`
+                });
+            }
+        } catch (err) {
+            return msg.reply({
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to unlock the channel!`
+            });
         }
+
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
 
         if (!msg.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
@@ -32,7 +41,7 @@ module.exports = {
             }
             // unlock for that user
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
-            
+
             // Remove the lock from the database if it exists
             try {
                 await removeActiveLock(msg.guild.id, client.user.id, channel.id);
@@ -40,7 +49,7 @@ module.exports = {
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);
             }
-            
+
             // mention user without ping
             const userMention = `<@${msg.author.id}>`;
             return msg.channel.send({
@@ -55,9 +64,15 @@ module.exports = {
     },
     async executeInteraction(interaction, client) {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
-        const member = await interaction.guild.members.fetch(P2);
-        if (!member) {
-        return interaction.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
+        try {
+            const member = await msg.guild.members.fetch(P2);
+            if (!member) {
+                return interaction.reply({
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral });
+            }
+        } catch (err) {
+            return interaction.reply({
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to unlock the channel!`, flags: MessageFlags.Ephemeral });
         }
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
             return interaction.reply({ content: '⚠️ I\'m missing the `Manage Permissions` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
@@ -76,7 +91,7 @@ module.exports = {
             }
             // unlock for that user
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
-            
+
             // Remove the lock from the database if it exists
             try {
                 await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
@@ -84,7 +99,7 @@ module.exports = {
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);
             }
-            
+
             // mention user without ping
             const userMention = `<@${interaction.user.id}>`;
             return interaction.reply({

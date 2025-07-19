@@ -1,4 +1,4 @@
-//v2.5.4
+//v2.7.2
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -10,11 +10,19 @@ module.exports = {
     async execute(msg, args, client) {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const prefix = await getPrefixForServer(msg.guild.id);
-        // Check bot guild-level ManageRoles permission
-        const member = await msg.guild.members.fetch(P2);
-        if (!member) {
-        return msg.reply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!` });
+        try {
+            const member = await msg.guild.members.fetch(P2);
+            if (!member) {
+                return msg.reply({
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`
+                });
+            }
+        } catch (err) {
+            return msg.reply({
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to lock the channel!`
+            });
         }
+
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return msg.channel.send('⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.');
         }
@@ -66,10 +74,15 @@ module.exports = {
         await interaction.deferReply();
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const prefix = await getPrefixForServer(interaction.guild.id);
-        // Check bot guild-level ManageRoles permission
-        const member = await interaction.guild.members.fetch(P2);
-        if (!member) {
-        return interaction.editReply({ content: `⚠️Error: <@${P2}> is not in the server, please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
+        try {
+            const member = await msg.guild.members.fetch(P2);
+            if (!member) {
+                return interaction.editReply({
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral });
+            }
+        } catch (err) {
+            return interaction.editReply({
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
         }
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.' });
