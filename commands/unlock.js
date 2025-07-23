@@ -1,4 +1,4 @@
-//v2.7.2
+//v2.7.3
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -65,7 +65,7 @@ module.exports = {
     async executeInteraction(interaction, client) {
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         try {
-            const member = await msg.guild.members.fetch(P2);
+            const member = await interaction.guild.members.fetch(P2);
             if (!member) {
                 return interaction.reply({
                     content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral });
