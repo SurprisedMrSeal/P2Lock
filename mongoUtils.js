@@ -1,4 +1,4 @@
-//v2.8.1
+//v2.8.2
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const { prefix } = require('./utils');
@@ -138,7 +138,7 @@ function getDefaultToggleableFeatures() {
         includeQuestPings: false,
         includeTypePings: false,
         lockAfk: true,
-        pingAfk: true,
+        pingAfk: false,
         autoPin: false,
         adminMode: false,
     };
