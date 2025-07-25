@@ -1,4 +1,4 @@
-//v2.7.0
+//v2.8.1
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime, P2 } = require('../utils');
@@ -10,7 +10,7 @@ const commandDefs = prefix => [
   { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
   { name: 'config', description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config <> []\`` },
   { name: 'toggle', description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
-  { name: 'pingafk', description: `[Pings the afk members using Poké-Name or P2 Assistant.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk\` \`${prefix}pa\`` },
+  { name: 'pingafk', description: `[Pings the afk members using Poké-Name or P2 Assistant.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk <>\` \`${prefix}pa <>\`` },
   { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
   { name: 'blacklist', description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
   { name: 'suggest', description: `Sends your suggestion to the developer.\n\`${prefix}suggest []\`` },

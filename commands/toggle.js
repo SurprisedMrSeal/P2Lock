@@ -1,4 +1,4 @@
-//v2.6.0
+//v2.8.1
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
@@ -12,7 +12,7 @@ const featureDisplayName = {
     includeQuestPings: 'Quest Lock\n`Toggle whether it locks for Quest Pings.`',
     includeTypePings: 'Type Lock\n`Toggle whether it locks for Type Pings.`',
     lockAfk: 'LockAfk\n`Toggle whether it locks for AFK users (Locks if true).`',
-    pingAfk: 'PingAfk\n`Toggle to enable/disable the module.`',
+    pingAfk: 'PingAfk\n`Toggle whether it pings AFK shiny hunters.`',
     autoPin: 'AutoPin\n`Toggle whether it pins a "Shiny caught" message.`',
     adminMode: 'AdminMode\n`Toggle whether the lock/unlock commands are admin only.`'
 };

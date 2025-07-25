@@ -1,4 +1,4 @@
-//v2.6.0
+//v2.8.1
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const { prefix } = require('./utils');
@@ -179,14 +179,14 @@ async function saveActiveLock(guildId, channelId, botId, lockTime, unlockTime) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
         const filter = { guildId, channelId };
-        const update = { 
-            $set: { 
+        const update = {
+            $set: {
                 guildId,
                 channelId,
                 botId,
                 lockTime,
                 unlockTime
-            } 
+            }
         };
         const options = { upsert: true };
         const result = await locksCollection.updateOne(filter, update, options);
@@ -211,7 +211,7 @@ async function removeActiveLock(guildId, botId, channelId) {
 async function getActiveLocks(botId) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        return await locksCollection.find({botId}).toArray();
+        return await locksCollection.find({ botId }).toArray();
     } catch (error) {
         console.error('Error fetching active locks from MongoDB:', error);
         return [];
@@ -264,6 +264,47 @@ async function getEventList() {
     }
 }
 
+// PingAfk opting in/out
+async function getAfkPingOptOutList() {
+    try {
+        const collection = mongoClient.db(DB).collection('pingafk_optout');
+        const doc = await collection.findOne({ _id: "oolist" });
+        return doc?.userIds || [];
+    } catch (error) {
+        console.error('Error fetching AFK opt-out list:', error);
+        return [];
+    }
+}
+
+async function toggleAfkPingOptOut(userId) {
+    try {
+        const collection = mongoClient.db(DB).collection('pingafk_optout');
+        const doc = await collection.findOne({ _id: 'oolist' });
+
+        let updatedUserIds;
+
+        if (!doc) {
+            updatedUserIds = [userId];
+        } else {
+            const isOptedOut = doc.userIds?.includes(userId);
+            updatedUserIds = isOptedOut
+                ? doc.userIds.filter(id => id !== userId)
+                : [...doc.userIds, userId];
+        }
+
+        await collection.updateOne(
+            { _id: 'oolist' },
+            { $set: { userIds: updatedUserIds } },
+            { upsert: true }
+        );
+
+        return updatedUserIds.includes(userId); // true if now opted out
+    } catch (error) {
+        console.error('Error toggling AFK ping opt-out:', error);
+        return false;
+    }
+}
+
 module.exports = {
     connectToMongo,
     getPrefixForServer,
@@ -282,5 +323,7 @@ module.exports = {
     getActiveLocks,
     getActiveLock,
     saveEventList,
-    getEventList
+    getEventList,
+    getAfkPingOptOutList,
+    toggleAfkPingOptOut
 };

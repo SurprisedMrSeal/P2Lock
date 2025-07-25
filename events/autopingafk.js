@@ -1,6 +1,6 @@
-//v2.8.0
-const { loadToggleableFeatures, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
-const { Pname, P2a, P2a_P, Seal, prefix } = require('../utils');
+//v2.8.1
+const { loadToggleableFeatures, loadBlacklistedChannels, getPrefixForServer, getAfkPingOptOutList } = require('../mongoUtils');
+const { Pname, P2a, P2a_P, Seal } = require('../utils');
 
 module.exports = {
     name: 'messageCreate',
@@ -25,12 +25,17 @@ module.exports = {
         const afkUserIdRegex = /(\d{17,19}) \(AFK\)/g;
         let match;
 
+        const optOutList = await getAfkPingOptOutList();
+
         while ((match = afkUserIdRegex.exec(section[1])) !== null) {
-            mentionedUsers.push(`<@${match[1]}>`);
+            const userId = match[1];
+            if (!optOutList.includes(userId)) {
+                mentionedUsers.push(`<@${userId}>`);
+            }
         }
 
         if (mentionedUsers.length > 0) {
-            msg.channel.send(`Pinging AFK Hunters: ${mentionedUsers.join(' ')} \n-# Run \`${prefix}insert cmd here\` to opt out of AFK Pings.`);
+            msg.channel.send(`Pinging AFK Hunters: ${mentionedUsers.join(' ')} \n-# Run \`${prefix}pingafk optout\` to opt out of AFK Pings.`);
         }
     }
 };
