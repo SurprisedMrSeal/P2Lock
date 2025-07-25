@@ -1,4 +1,4 @@
-//v2.4.3
+//v2.8.0
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
 const { Pname, P2a, P2a_P, Seal } = require('../utils');
 
@@ -6,19 +6,17 @@ module.exports = {
     name: 'pingafk',
     aliases: ['pa'],
     async execute(msg, args, client) {
-        const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
-        const prefix = await getPrefixForServer(msg.guild.id);
+        // const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
 
         // ensure this is a reply
         if (!msg.reference) {
             msg.channel.send(`⚠️ Please reply to a message from <@${Pname}> or <@${P2a}>.`);
             return;
         }
-        // check feature toggle
-        if (!toggleableFeatures.pingAfk) {
-            msg.channel.send(`❌ This command is disabled. Admins can enable it by running \`${prefix}toggle pingafk\`.`);
-            return;
-        }
+        // if (!toggleableFeatures.pingAfk) {
+        //     msg.channel.send(`❌ This command is disabled. Admins can enable it by running \`${prefix}toggle pingafk\`.`);
+        //     return;
+        // }
         // fetch the referenced message (the one being replied to)
         let referencedMessage;
         try {
