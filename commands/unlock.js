@@ -1,4 +1,4 @@
-//v2.7.3
+//v2.8.3
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -37,25 +37,33 @@ module.exports = {
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
             // if not locked for that user, nothing to do
             if (!overwrite || !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-                return msg.channel.send('This channel is already unlocked.');
+                await msg.channel.send('This channel is already unlocked.');
+                try {
+                    await removeActiveLock(msg.guild.id, client.user.id, channel.id);
+                } catch (error) {
+                    console.error(`Error removing lock from database: ${error}`);
+                }
+                return;
             }
-            // unlock for that user
+            // unlock logic
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
 
-            // Remove the lock from the database if it exists
+            // unlock message
+            const userMention = `<@${msg.author.id}>`;
+            await msg.channel.send({
+                content: `This channel has been unlocked by ${userMention}!`,
+                allowedMentions: { users: [] }
+            });
+
+            // database removal
             try {
                 await removeActiveLock(msg.guild.id, client.user.id, channel.id);
-                //console.log(`Removed lock for channel ${channel.id} in guild ${msg.guild.id} via prefix command`);
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);
             }
 
-            // mention user without ping
-            const userMention = `<@${msg.author.id}>`;
-            return msg.channel.send({
-                content: `This channel has been unlocked by ${userMention}!`,
-                allowedMentions: { users: [] }
-            });
+            return;
+
         } catch (error) {
             console.error('(Unlock) Error in unlock command:', error);
             return msg.channel.send('⚠️ Hmm, something prevented me from unlocking this channel.')
@@ -68,11 +76,13 @@ module.exports = {
             const member = await interaction.guild.members.fetch(P2);
             if (!member) {
                 return interaction.reply({
-                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral });
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral
+                });
             }
         } catch (err) {
             return interaction.reply({
-                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to unlock the channel!`, flags: MessageFlags.Ephemeral });
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to unlock the channel!`, flags: MessageFlags.Ephemeral
+            });
         }
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
             return interaction.reply({ content: '⚠️ I\'m missing the `Manage Permissions` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
@@ -87,25 +97,31 @@ module.exports = {
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
             // if not locked for that user, nothing to do
             if (!overwrite || !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-                return interaction.reply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
+                await interaction.reply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
+
+                try {
+                    await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
+                } catch (error) {
+                    console.error(`Error removing lock from database: ${error}`);
+                }
+                return;
             }
-            // unlock for that user
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
 
-            // Remove the lock from the database if it exists
+            const userMention = `<@${interaction.user.id}>`;
+            await interaction.reply({
+                content: `This channel has been unlocked by ${userMention}!`,
+                allowedMentions: { users: [] }
+            });
+
             try {
                 await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
-                //console.log(`Removed lock for channel ${channel.id} in guild ${interaction.guild.id} via slash command`);
             } catch (error) {
                 console.error(`Error removing lock from database: ${error}`);
             }
 
-            // mention user without ping
-            const userMention = `<@${interaction.user.id}>`;
-            return interaction.reply({
-                content: `This channel has been unlocked by ${userMention}!`,
-                allowedMentions: { users: [] }
-            });
+            return;
+
         } catch (error) {
             console.error('(Unlock Interaction) Error in unlock command:', error);
             return interaction.reply({ content: '⚠️ Hmm, something prevented me from unlocking this channel.', flags: MessageFlags.Ephemeral });
