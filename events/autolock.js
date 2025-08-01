@@ -1,4 +1,4 @@
-//v2.6.0
+//v2.8.4
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
@@ -24,6 +24,12 @@ module.exports = {
         const hasPing = (keyword) =>
             lines.some(line => line.toLowerCase().includes(keyword.toLowerCase())
                 && (toggleableFeatures.lockAfk || /<@\d+>/.test(line)));
+
+        const timeSinceMessage = Date.now() - msg.createdTimestamp;
+        if (timeSinceMessage > 30*1000) {
+            console.warn(`(AutoLock) Skipped, outdated message (${timeSinceMessage}ms old): ${msg.content}`);
+            return;
+        }
 
         if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
@@ -276,7 +282,7 @@ module.exports = {
             errorCooldowns.set(msg.channel.id, now + CHANNEL_COOLDOWN_MS);
             setTimeout(() => errorCooldowns.delete(msg.channel.id), CHANNEL_COOLDOWN_MS);
 
-             return msg.channel.send(`All mentioned users are AFK, channel will not be locked.\n-# Run \`${prefix}toggle lockAfk\` to enable locking for AFK users.`);
+            return msg.channel.send(`All mentioned users are AFK, channel will not be locked.\n-# Run \`${prefix}toggle lockAfk\` to enable locking for AFK users.`);
         }
     }
 };
