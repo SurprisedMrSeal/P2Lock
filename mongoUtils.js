@@ -1,4 +1,4 @@
-module.exports = {ver: '2.9.0'};
+module.exports = {ver: '2.9.1'};
 
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
@@ -266,6 +266,32 @@ async function getEventList() {
     }
 }
 
+// Custom mon list
+async function saveCustomList(mon, guildId) {
+    try {
+        const collection = mongoClient.db(DB).collection('custom_list');
+        const filter = { _id: guildId };
+        const update = { $set: { mon } };
+        const options = { upsert: true };
+        await collection.updateOne(filter, update, options);
+        return true;
+    } catch (error) {
+        console.error('Error saving custom mon list:', error);
+        return false;
+    }
+}
+
+async function getCustomList(guildId) {
+    try {
+        const collection = mongoClient.db(DB).collection('custom_list');
+        const doc = await collection.findOne({ _id: guildId });
+        return doc ? doc.mon : [];
+    } catch (error) {
+        console.error('Error loading custom mon list:', error);
+        return [];
+    }
+}
+
 // PingAfk opting in/out
 async function getAfkPingOptOutList() {
     try {
@@ -326,6 +352,8 @@ module.exports = {
     getActiveLock,
     saveEventList,
     getEventList,
+    saveCustomList,
+    getCustomList,
     getAfkPingOptOutList,
     toggleAfkPingOptOut
 };

@@ -1,6 +1,7 @@
-//v2.8.4
+module.exports = {ver: '2.9.1'};
+
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels } = require('../mongoUtils');
+const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 
 const lockCooldowns = new Map();
@@ -16,6 +17,8 @@ module.exports = {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const blacklistedChannels = await loadBlacklistedChannels(msg.guild.id);
         const eventList = await getEventList();
+        const customList = await getCustomList(msg.guild.id);
+
 
         if (!msg.channel || blacklistedChannels.includes(msg.channel.id)) return;
 
@@ -43,6 +46,10 @@ module.exports = {
                 (toggleableFeatures.includeEventPings
                     && msg.author.id !== Seal
                     && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
+                    && (msg.content.includes(':') || msg.content.includes('#'))) ||
+                (toggleableFeatures.includeCustomLocks
+                    && msg.author.id !== Seal
+                    && customList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
                     && (msg.content.includes(':') || msg.content.includes('#')))
             )
         ) {
@@ -263,13 +270,7 @@ module.exports = {
                 (toggleableFeatures.includeShinyHuntPings && shouldIgnorePing('shiny hunt pings:')) ||
                 (toggleableFeatures.includeCollectionPings && shouldIgnorePing('collection pings:')) ||
                 (toggleableFeatures.includeQuestPings && shouldIgnorePing('quest pings:')) ||
-                (toggleableFeatures.includeTypePings && shouldIgnorePing('type pings:')) ||
-                (toggleableFeatures.includeRarePings && msg.content.toLowerCase().includes('rare ping:')) ||
-                (toggleableFeatures.includeRegionalPings && msg.content.toLowerCase().includes('regional ping:')) ||
-                (toggleableFeatures.includeEventPings
-                    && msg.author.id !== Seal
-                    && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
-                    && (msg.content.includes(':') || msg.content.includes('#')))
+                (toggleableFeatures.includeTypePings && shouldIgnorePing('type pings:'))
             )
         ) {
             const now = Date.now();
