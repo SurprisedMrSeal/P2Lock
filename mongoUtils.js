@@ -1,4 +1,5 @@
-//v2.8.2
+module.exports = {ver: '2.9.0'};
+
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 const { prefix } = require('./utils');
@@ -134,9 +135,10 @@ function getDefaultToggleableFeatures() {
         includeRarePings: true,
         includeRegionalPings: true,
         includeCollectionPings: false,
-        includeEventPings: false,
         includeQuestPings: false,
         includeTypePings: false,
+        includeEventPings: false,
+        includeCustomLocks: false,
         lockAfk: true,
         pingAfk: false,
         autoPin: false,
