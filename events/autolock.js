@@ -1,4 +1,4 @@
-module.exports = {ver: '2.9.1'};
+module.exports = {ver: '2.9.2'};
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -46,11 +46,11 @@ module.exports = {
                 (toggleableFeatures.includeEventPings
                     && msg.author.id !== Seal
                     && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
-                    && (msg.content.includes(':') || msg.content.includes('#'))) ||
+                    && ((msg.content.includes(':') && msg.content.includes('%'))|| msg.content.includes('##'))) ||
                 (toggleableFeatures.includeCustomLocks
                     && msg.author.id !== Seal
                     && customList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
-                    && (msg.content.includes(':') || msg.content.includes('#')))
+                    && ((msg.content.includes(':') && msg.content.includes('%'))|| msg.content.includes('##')))
             )
         ) {
             const now = Date.now();
