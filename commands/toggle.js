@@ -1,4 +1,4 @@
-module.exports = {ver: '2.9.0'};
+module.exports = { ver: '2.9.4' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -21,7 +21,7 @@ const featureDisplayName = {
 
 async function buildTogglePagedEmbed(toggleableFeatures, page = 1, mode) {
     const features = Object.keys(featureDisplayName);
-    const itemsPerPage = 7;
+    const itemsPerPage = 8;
     const totalPages = Math.ceil(features.length / itemsPerPage);
     const start = (page - 1) * itemsPerPage;
     const current = features.slice(start, start + itemsPerPage);
