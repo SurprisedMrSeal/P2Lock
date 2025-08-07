@@ -1,4 +1,4 @@
-module.exports = { ver: '2.9.3' };
+module.exports = { ver: '2.9.5' };
 
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getCustomList, saveCustomList, getPrefixForServer } = require('../mongoUtils');
@@ -93,7 +93,10 @@ module.exports = {
             if (newMons.length === 0) return msg.channel.send('✅ All provided Pokémon are already in the list.');
             currentList.push(...newMons);
             await saveCustomList(currentList, guildId);
-            return msg.channel.send(`✅ Added: \`${newMons.join('`, `')}\`\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`);
+            return msg.channel.send({
+                content: `✅ Added: \`${newMons.join('`, `')}\`\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`,
+                allowedMentions: { parse: [], users: [], roles: [] }
+            });
         }
 
         if (sub === 'remove' || sub === 'r') {
@@ -104,7 +107,10 @@ module.exports = {
             if (removed.length === 0) return msg.channel.send('⚠️ None of the provided Pokémon were found.');
             currentList = currentList.filter((mon) => !removed.includes(mon));
             await saveCustomList(currentList, guildId);
-            return msg.channel.send(`✅ Removed: \`${removed.join('`, `')}\``);
+            return msg.channel.send({
+                content: `✅ Removed: \`${removed.join('`, `')}\``,
+                allowedMentions: { parse: [], users: [], roles: [] }
+            });
         }
 
         if (sub === 'list') {
@@ -115,7 +121,7 @@ module.exports = {
             const row = createPaginationRow();
 
             const msgSent = await msg.channel.send({ embeds: [embed], components: [row] });
-            const collector = msgSent.createMessageComponentCollector({ time: 3*60*1000 });
+            const collector = msgSent.createMessageComponentCollector({ time: 3 * 60 * 1000 });
 
             collector.on('collect', async (interaction) => {
                 if (interaction.user.id !== msg.author.id) return interaction.reply({ content: 'Not for you 👀', ephemeral: true });
@@ -155,7 +161,10 @@ module.exports = {
                 return interaction.reply({ content: '✅ All provided Pokémon are already in the list.', flags: MessageFlags.Ephemeral });
             currentList.push(...newMons);
             await saveCustomList(currentList, guildId);
-            return interaction.reply(`✅ Added: \`${newMons.join('`, `')}\`\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`);
+            return interaction.reply({
+                content: `✅ Added: \`${newMons.join('`, `')}\`\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`,
+                allowedMentions: { parse: [], users: [], roles: [] }
+            });
         }
 
         if (sub === 'remove') {
@@ -167,7 +176,10 @@ module.exports = {
                 return interaction.reply({ content: '⚠️ None of the provided Pokémon were found.', flags: MessageFlags.Ephemeral });
             currentList = currentList.filter((mon) => !removed.includes(mon));
             await saveCustomList(currentList, guildId);
-            return interaction.reply(`✅ Removed: \`${removed.join('`, `')}\``);
+            return interaction.reply({
+                content: `✅ Removed: \`${removed.join('`, `')}\``,
+                allowedMentions: { parse: [], users: [], roles: [] }
+            });
         }
 
         if (sub === 'list') {
@@ -181,7 +193,7 @@ module.exports = {
 
             await interaction.reply({ embeds: [embed], components: [row] });
             const reply = await interaction.fetchReply();
-            const collector = reply.createMessageComponentCollector({ time: 3*60*1000 });
+            const collector = reply.createMessageComponentCollector({ time: 3 * 60 * 1000 });
 
             collector.on('collect', async (btn) => {
                 if (btn.user.id !== interaction.user.id)
