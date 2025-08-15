@@ -1,4 +1,4 @@
-module.exports = {ver: '2.9.2'};
+module.exports = { ver: '2.9.6' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -29,8 +29,8 @@ module.exports = {
                 && (toggleableFeatures.lockAfk || /<@\d+>/.test(line)));
 
         const timeSinceMessage = Date.now() - msg.createdTimestamp;
-        if (timeSinceMessage > 30*1000) {
-            console.warn(`(AutoLock) Skipped, outdated message (${timeSinceMessage}ms old): ${msg.content}`);
+        if (timeSinceMessage > 30 * 1000) {
+            // console.warn(`(AutoLock) Skipped, outdated message (${timeSinceMessage}ms old): ${msg.content}`);
             return;
         }
 
@@ -46,11 +46,11 @@ module.exports = {
                 (toggleableFeatures.includeEventPings
                     && msg.author.id !== Seal
                     && eventList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
-                    && ((msg.content.includes(':') && msg.content.includes('%'))|| msg.content.includes('##'))) ||
+                    && ((msg.content.includes(':') && msg.content.includes('%')) || msg.content.includes('##'))) ||
                 (toggleableFeatures.includeCustomLocks
                     && msg.author.id !== Seal
                     && customList.some(mon => msg.content.toLowerCase().includes(mon.toLowerCase()))
-                    && ((msg.content.includes(':') && msg.content.includes('%'))|| msg.content.includes('##')))
+                    && ((msg.content.includes(':') && msg.content.includes('%')) || msg.content.includes('##')))
             )
         ) {
             const now = Date.now();
