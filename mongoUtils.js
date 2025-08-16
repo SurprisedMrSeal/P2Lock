@@ -1,4 +1,4 @@
-module.exports = {ver: '2.9.1'};
+module.exports = { ver: '2.10.0' };
 
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
@@ -10,6 +10,18 @@ const mongoClient = new MongoClient(uri);
 const DB = "P2Lock";
 const defaultPrefix = prefix;
 ////
+
+// --- In-memory caches ---
+const prefixCache = new Map();          // guildId -> prefix
+const delayCache = new Map();           // guildId -> delay
+const timerCache = new Map();           // guildId -> timer
+const toggleCache = new Map();          // guildId -> toggle features
+const blacklistedCache = new Map();     // guildId -> channels
+const eventListCache = { mon: [] };     // global cache
+const customListCache = new Map();      // guildId -> mon array
+const afkOptOutCache = new Set();       // userIds
+
+// --- Connect to MongoDB ---
 async function connectToMongo() {
     try {
         await mongoClient.connect();
@@ -22,10 +34,12 @@ async function connectToMongo() {
 
 // Prefix
 async function getPrefixForServer(guildId) {
+    if (prefixCache.has(guildId)) return prefixCache.get(guildId);
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const configDocument = await configCollection.findOne({ guildId });
-        return configDocument ? configDocument.prefix || defaultPrefix : defaultPrefix;
+        const doc = await mongoClient.db(DB).collection('config').findOne({ guildId });
+        const value = doc?.prefix || defaultPrefix;
+        prefixCache.set(guildId, value);
+        return value;
     } catch (error) {
         console.error('Error fetching prefix from MongoDB:', error);
         return defaultPrefix;
@@ -34,12 +48,13 @@ async function getPrefixForServer(guildId) {
 
 async function updatePrefixForServer(guildId, newPrefix) {
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const filter = { guildId };
-        const update = { $set: { prefix: newPrefix } };
-        const options = { upsert: true };
-        const result = await configCollection.updateOne(filter, update, options);
-        return result.modifiedCount > 0 || result.upsertedCount > 0;
+        await mongoClient.db(DB).collection('config').updateOne(
+            { guildId },
+            { $set: { prefix: newPrefix } },
+            { upsert: true }
+        );
+        prefixCache.set(guildId, newPrefix);
+        return true;
     } catch (error) {
         console.error('Error updating prefix in MongoDB:', error);
         return false;
@@ -48,10 +63,12 @@ async function updatePrefixForServer(guildId, newPrefix) {
 
 // Delay
 async function getDelay(guildId) {
+    if (delayCache.has(guildId)) return delayCache.get(guildId);
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const configDocument = await configCollection.findOne({ guildId });
-        return configDocument ? configDocument.delay || "0" : "0";
+        const doc = await mongoClient.db(DB).collection('config').findOne({ guildId });
+        const value = doc?.delay || "0";
+        delayCache.set(guildId, value);
+        return value;
     } catch (error) {
         console.error('Error fetching delay from MongoDB:', error);
         return "0";
@@ -60,12 +77,13 @@ async function getDelay(guildId) {
 
 async function updateDelay(guildId, newDelay) {
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const filter = { guildId };
-        const update = { $set: { delay: newDelay } };
-        const options = { upsert: true };
-        const result = await configCollection.updateOne(filter, update, options);
-        return result.modifiedCount > 0 || result.upsertedCount > 0;
+        await mongoClient.db(DB).collection('config').updateOne(
+            { guildId },
+            { $set: { delay: newDelay } },
+            { upsert: true }
+        );
+        delayCache.set(guildId, newDelay);
+        return true;
     } catch (error) {
         console.error('Error updating delay in MongoDB:', error);
         return false;
@@ -74,10 +92,12 @@ async function updateDelay(guildId, newDelay) {
 
 // Timer
 async function getTimer(guildId) {
+    if (timerCache.has(guildId)) return timerCache.get(guildId);
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const configDocument = await configCollection.findOne({ guildId });
-        return configDocument ? configDocument.timer || "0" : "0";
+        const doc = await mongoClient.db(DB).collection('config').findOne({ guildId });
+        const value = doc?.timer || "0";
+        timerCache.set(guildId, value);
+        return value;
     } catch (error) {
         console.error('Error fetching timer from MongoDB:', error);
         return "0";
@@ -86,46 +106,48 @@ async function getTimer(guildId) {
 
 async function updateTimer(guildId, newTimer) {
     try {
-        const configCollection = mongoClient.db(DB).collection('config');
-        const filter = { guildId };
-        const update = { $set: { timer: newTimer } };
-        const options = { upsert: true };
-        const result = await configCollection.updateOne(filter, update, options);
-        return result.modifiedCount > 0 || result.upsertedCount > 0;
+        await mongoClient.db(DB).collection('config').updateOne(
+            { guildId },
+            { $set: { timer: newTimer } },
+            { upsert: true }
+        );
+        timerCache.set(guildId, newTimer);
+        return true;
     } catch (error) {
         console.error('Error updating timer in MongoDB:', error);
         return false;
     }
 }
 
-// Toggle
+// Toggle Features
+async function loadToggleableFeatures(guildId) {
+    if (toggleCache.has(guildId)) return toggleCache.get(guildId);
+
+    try {
+        const doc = await mongoClient.db(DB).collection('toggleable_features').findOne({ _id: guildId });
+        const defaults = getDefaultToggleableFeatures();
+        const stored = doc?.features || {};
+        const merged = { ...defaults, ...stored };
+        toggleCache.set(guildId, merged);
+        return merged;
+    } catch (error) {
+        console.error('Error loading toggleable features from MongoDB:', error);
+        return getDefaultToggleableFeatures();
+    }
+}
+
 async function saveToggleableFeatures(guildId, features) {
     try {
-        const toggleableCollection = mongoClient.db(DB).collection('toggleable_features');
-        const result = await toggleableCollection.updateOne(
+        await mongoClient.db(DB).collection('toggleable_features').updateOne(
             { _id: guildId },
             { $set: { features } },
             { upsert: true }
         );
-        return result.modifiedCount > 0;
+        toggleCache.set(guildId, features);
+        return true;
     } catch (error) {
         console.error('Error saving toggleable features to MongoDB:', error);
         return false;
-    }
-}
-
-async function loadToggleableFeatures(guildId) {
-    try {
-        const toggleableCollection = mongoClient.db(DB).collection('toggleable_features');
-        const document = await toggleableCollection.findOne({ _id: guildId });
-
-        const defaults = getDefaultToggleableFeatures();
-        const stored = document?.features || {};
-
-        return { ...defaults, ...stored };
-    } catch (error) {
-        console.error('Error loading toggleable features from MongoDB:', error);
-        return getDefaultToggleableFeatures();
     }
 }
 
@@ -146,33 +168,33 @@ function getDefaultToggleableFeatures() {
     };
 }
 
-// Blacklist
-async function saveBlacklistedChannels(guildId, channels) {
-    try {
-        const database = mongoClient.db(DB);
-        const collection = database.collection('blacklisted_channels');
-
-        await collection.updateOne({ guildId }, { $set: { channels } }, { upsert: true });
-    } catch (error) {
-        console.error('Error saving blacklisted channels:', error);
-    }
-}
-
+// Blacklisted Channels
 async function loadBlacklistedChannels(guildId) {
+    if (blacklistedCache.has(guildId)) return blacklistedCache.get(guildId);
+
     try {
-        const database = mongoClient.db(DB);
-        const collection = database.collection('blacklisted_channels');
-
-        const result = await collection.findOne({ guildId });
-
-        if (result) {
-            return result.channels || [];
-        } else {
-            return [];
-        }
+        const doc = await mongoClient.db(DB).collection('blacklisted_channels').findOne({ guildId });
+        const channels = doc?.channels || [];
+        blacklistedCache.set(guildId, channels);
+        return channels;
     } catch (error) {
         console.error('Error loading blacklisted channels:', error);
         return [];
+    }
+}
+
+async function saveBlacklistedChannels(guildId, channels) {
+    try {
+        await mongoClient.db(DB).collection('blacklisted_channels').updateOne(
+            { guildId },
+            { $set: { channels } },
+            { upsert: true }
+        );
+        blacklistedCache.set(guildId, channels);
+        return true;
+    } catch (error) {
+        console.error('Error saving blacklisted channels:', error);
+        return false;
     }
 }
 
@@ -180,19 +202,12 @@ async function loadBlacklistedChannels(guildId) {
 async function saveActiveLock(guildId, channelId, botId, lockTime, unlockTime) {
     try {
         const locksCollection = mongoClient.db(DB).collection('active_locks');
-        const filter = { guildId, channelId };
-        const update = {
-            $set: {
-                guildId,
-                channelId,
-                botId,
-                lockTime,
-                unlockTime
-            }
-        };
-        const options = { upsert: true };
-        const result = await locksCollection.updateOne(filter, update, options);
-        return result.modifiedCount > 0 || result.upsertedCount > 0;
+        await locksCollection.updateOne(
+            { guildId, channelId },
+            { $set: { guildId, channelId, botId, lockTime, unlockTime } },
+            { upsert: true }
+        );
+        return true;
     } catch (error) {
         console.error('Error saving active lock to MongoDB:', error);
         return false;
@@ -241,13 +256,27 @@ async function setupTTLIndex() {
 }
 
 // Event mon list
+async function getEventList() {
+    if (eventListCache.mon.length) return eventListCache.mon;
+
+    try {
+        const doc = await mongoClient.db(DB).collection('event_list').findOne({ _id: "list" });
+        eventListCache.mon = doc?.mon || [];
+        return eventListCache.mon;
+    } catch (error) {
+        console.error('Error loading event list:', error);
+        return [];
+    }
+}
+
 async function saveEventList(mon) {
     try {
-        const collection = mongoClient.db(DB).collection('event_list');
-        const filter = { _id: "list" };
-        const update = { $set: { mon } };
-        const options = { upsert: true };
-        await collection.updateOne(filter, update, options);
+        await mongoClient.db(DB).collection('event_list').updateOne(
+            { _id: "list" },
+            { $set: { mon } },
+            { upsert: true }
+        );
+        eventListCache.mon = mon;
         return true;
     } catch (error) {
         console.error('Error saving event list:', error);
@@ -255,25 +284,29 @@ async function saveEventList(mon) {
     }
 }
 
-async function getEventList() {
+// Custom List
+async function getCustomList(guildId) {
+    if (customListCache.has(guildId)) return customListCache.get(guildId);
+
     try {
-        const collection = mongoClient.db(DB).collection('event_list');
-        const doc = await collection.findOne({ _id: "list" });
-        return doc ? doc.mon : [];
+        const doc = await mongoClient.db(DB).collection('custom_list').findOne({ _id: guildId });
+        const list = doc?.mon || [];
+        customListCache.set(guildId, list);
+        return list;
     } catch (error) {
-        console.error('Error loading event list:', error);
+        console.error('Error loading custom mon list:', error);
         return [];
     }
 }
 
-// Custom mon list
 async function saveCustomList(mon, guildId) {
     try {
-        const collection = mongoClient.db(DB).collection('custom_list');
-        const filter = { _id: guildId };
-        const update = { $set: { mon } };
-        const options = { upsert: true };
-        await collection.updateOne(filter, update, options);
+        await mongoClient.db(DB).collection('custom_list').updateOne(
+            { _id: guildId },
+            { $set: { mon } },
+            { upsert: true }
+        );
+        customListCache.set(guildId, mon);
         return true;
     } catch (error) {
         console.error('Error saving custom mon list:', error);
@@ -281,23 +314,16 @@ async function saveCustomList(mon, guildId) {
     }
 }
 
-async function getCustomList(guildId) {
-    try {
-        const collection = mongoClient.db(DB).collection('custom_list');
-        const doc = await collection.findOne({ _id: guildId });
-        return doc ? doc.mon : [];
-    } catch (error) {
-        console.error('Error loading custom mon list:', error);
-        return [];
-    }
-}
-
 // PingAfk opting in/out
 async function getAfkPingOptOutList() {
+    if (afkOptOutCache.size) return Array.from(afkOptOutCache);
+
     try {
-        const collection = mongoClient.db(DB).collection('pingafk_optout');
-        const doc = await collection.findOne({ _id: "oolist" });
-        return doc?.userIds || [];
+        const doc = await mongoClient.db(DB).collection('pingafk_optout').findOne({ _id: "oolist" });
+        const users = doc?.userIds || [];
+        afkOptOutCache.clear();
+        users.forEach(u => afkOptOutCache.add(u));
+        return users;
     } catch (error) {
         console.error('Error fetching AFK opt-out list:', error);
         return [];
@@ -310,7 +336,6 @@ async function toggleAfkPingOptOut(userId) {
         const doc = await collection.findOne({ _id: 'oolist' });
 
         let updatedUserIds;
-
         if (!doc) {
             updatedUserIds = [userId];
         } else {
@@ -325,6 +350,9 @@ async function toggleAfkPingOptOut(userId) {
             { $set: { userIds: updatedUserIds } },
             { upsert: true }
         );
+
+        afkOptOutCache.clear();
+        updatedUserIds.forEach(u => afkOptOutCache.add(u));
 
         return updatedUserIds.includes(userId); // true if now opted out
     } catch (error) {
