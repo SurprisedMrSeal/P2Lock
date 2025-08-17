@@ -1,4 +1,4 @@
-module.exports = { ver: '2.10.1' };
+module.exports = { ver: '2.10.2' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -56,8 +56,13 @@ module.exports = {
             const now = Date.now();
             const cooldownUntil = lockCooldowns.get(msg.channel.id) || 0;
             if (now < cooldownUntil) return;
+
             lockCooldowns.set(msg.channel.id, now + CHANNEL_COOLDOWN_MS);
-            setTimeout(() => lockCooldowns.delete(msg.channel.id), CHANNEL_COOLDOWN_MS);
+            errorCooldowns.set(msg.channel.id, now + CHANNEL_COOLDOWN_MS);
+            setTimeout(() => {
+                lockCooldowns.delete(msg.channel.id);
+                errorCooldowns.delete(msg.channel.id);
+            }, CHANNEL_COOLDOWN_MS);
 
             if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
                 return msg.channel.send('⚠️ Error: I don\'t have the `Manage Permissions` permission to lock this channel.');
@@ -203,7 +208,21 @@ module.exports = {
             if (now < cooldownUntil) return;
             errorCooldowns.set(msg.channel.id, now + CHANNEL_COOLDOWN_MS);
             setTimeout(() => errorCooldowns.delete(msg.channel.id), CHANNEL_COOLDOWN_MS);
-            return msg.channel.send(`All mentioned users are AFK, channel will not be locked.\n-# Run \`${prefix}toggle lockAfk\` to enable locking for AFK users.`);
+
+            const afkMessage = await msg.channel.send(
+                `All mentioned users are AFK, channel will not be locked.\n-# Run \`${prefix}toggle lockAfk\` to enable locking for AFK users.`
+            );
+
+            const filter = m =>
+                m.author.id === client.user.id &&
+                m.content &&
+                (m.content.includes("This channel will be locked") ||
+                m.content.includes("This channel has been locked."));
+
+            const collector = msg.channel.createMessageCollector({ filter, time: 7500, max: 1 });
+            collector.on("collect", async () => {
+                try { await afkMessage.delete(); } catch { }
+            });
         }
     }
 };
