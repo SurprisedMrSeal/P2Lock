@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.1' };
+module.exports = { ver: '2.12.2' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -213,7 +213,7 @@ module.exports = {
                     return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
                 }
                 toggleableFeatures.bwlist = !toggleableFeatures.bwlist;
-                msg.channel.send(`${toggleableFeatures.bwlist ? '🔳' : '⬜'} **Mode** switched to ${toggleableFeatures.adminMode ? 'blacklist' : 'whitelist'}.`);
+                msg.channel.send(`${toggleableFeatures.bwlist ? '🔳' : '⬜'} **Mode** switched to ${toggleableFeatures.bwlist ? 'blacklist' : 'whitelist'}.`);
                 break;
             default:
                 let page = 1;
