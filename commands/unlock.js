@@ -1,10 +1,15 @@
-//v2.8.3
-const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
+module.exports = { ver: '2.11.0' };
+
+const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
 
 module.exports = {
-    data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.'),
+    data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.').addStringOption(opt =>
+        opt.setName('channel')
+            .setDescription('Unlock a specific channel.')
+            .setRequired(false)
+    ),
     name: 'unlock',
     aliases: ['ul', 'u'],
     async execute(msg, args, client) {
@@ -31,12 +36,42 @@ module.exports = {
         }
 
         try {
-            const channel = msg.channel;
-            // only affect the user with ID P2
+            let channel = msg.channel; // default
+
+            if (args[0]) {
+                // Try to resolve channel by mention or ID
+                const mentionMatch = args[0].match(/^<#(\d+)>$/);
+                if (mentionMatch) {
+                    channel = msg.guild.channels.cache.get(mentionMatch[1]);
+                } else {
+                    // Try by ID directly
+                    channel = msg.guild.channels.cache.get(args[0])
+                        || msg.guild.channels.cache.find(c => c.name.toLowerCase() === args.join(" ").toLowerCase());
+                }
+
+                if (!channel) {
+                    return msg.reply("⚠️ Couldn't find that channel.");
+                }
+
+                if (channel.type === ChannelType.GuildCategory) {
+                    await msg.reply({ content: "Category detected, unlocking the entire category...", allowedMentions: { users: [] } });
+
+                    const targetMember = await msg.guild.members.fetch(P2);
+
+                    await channel.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
+
+                    for (const child of channel.children.cache.values()) {
+                        await child.lockPermissions();
+                    }
+
+                    return msg.channel.send(`Category **${channel.name}** has been unlocked.`);
+                }
+            }
+
             const targetMember = await msg.guild.members.fetch(P2);
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
-            // if not locked for that user, nothing to do
-            if (!overwrite || !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
+
+            if (overwrite && !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
                 await msg.channel.send('This channel is already unlocked.');
                 try {
                     await removeActiveLock(msg.guild.id, client.user.id, channel.id);
@@ -50,10 +85,14 @@ module.exports = {
 
             // unlock message
             const userMention = `<@${msg.author.id}>`;
-            await msg.channel.send({
+            await channel.send({
                 content: `This channel has been unlocked by ${userMention}!`,
                 allowedMentions: { users: [] }
             });
+
+            if (channel != msg.channel) {
+                await msg.reply({ content: `Unlocked ${channel}.`, allowedMentions: { users: [] } });
+            }
 
             // database removal
             try {
@@ -91,12 +130,43 @@ module.exports = {
             return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
         }
         try {
-            const channel = interaction.channel;
+            let channel = interaction.channel;
+
+            const arg = interaction.options.getString('channel');
+            if (arg) {
+                // Try mention
+                const mentionMatch = arg.match(/^<#(\d+)>$/);
+                if (mentionMatch) {
+                    channel = interaction.guild.channels.cache.get(mentionMatch[1]);
+                } else {
+                    // Try ID or name
+                    channel = interaction.guild.channels.cache.get(arg)
+                        || interaction.guild.channels.cache.find(c => c.name.toLowerCase() === arg.toLowerCase());
+                }
+
+                if (!channel) {
+                    return interaction.editReply({ content: "⚠️ Couldn't find that channel.", flags: MessageFlags.Ephemeral });
+                }
+
+                if (channel.type === ChannelType.GuildCategory) {
+                    await interaction.editReply({ content: "Category detected, unlocking the entire category...", allowedMentions: { users: [] } });
+
+                    const targetMember = await interaction.guild.members.fetch(P2);
+
+                    await channel.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
+
+                    for (const child of channel.children.cache.values()) {
+                        await child.lockPermissions();
+                    }
+
+                    return interaction.followUp({ content: `Category **${channel.name}** has been unlocked.` });
+                }
+            }
             // only affect the user with ID P2
             const targetMember = await interaction.guild.members.fetch(P2);
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
             // if not locked for that user, nothing to do
-            if (!overwrite || !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
+            if (overwrite && !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
                 await interaction.reply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
 
                 try {
@@ -109,10 +179,14 @@ module.exports = {
             await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
 
             const userMention = `<@${interaction.user.id}>`;
-            await interaction.reply({
+            await channel.send({
                 content: `This channel has been unlocked by ${userMention}!`,
                 allowedMentions: { users: [] }
             });
+
+            if (channel.id !== interaction.channel.id) {
+                    await interaction.editReply({ content: `Unlocked ${channel}`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+                }
 
             try {
                 await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
