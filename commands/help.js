@@ -1,4 +1,4 @@
-module.exports = { ver: '2.9.4' };
+module.exports = { ver: '2.12.4' };
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
@@ -7,8 +7,8 @@ const { embedColor, version, getRuntime, P2 } = require('../utils');
 const commandDefs = prefix => [
   { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
   { name: 'ping', description: `Displays the bot's latency.\n\`${prefix}ping\`` },
-  { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock\` \`${prefix}l\`` },
-  { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock\` \`${prefix}ul\` \`${prefix}u\`` },
+  { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock <>\` \`${prefix}l <>\`` },
+  { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock <>\` \`${prefix}u <>\`` },
   { name: 'config', description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config <> []\`` },
   { name: 'toggle', description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
   { name: 'pingafk', description: `[Pings the afk members using Poké-Name or P2 Assistant.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk <>\` \`${prefix}pa <>\`` },
