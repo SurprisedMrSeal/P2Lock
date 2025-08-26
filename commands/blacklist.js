@@ -1,4 +1,9 @@
-//v2.6.1
+module.exports = { ver: '2.12.0' };
+// Most variables have been left as "blacklist", including the filename despite 
+// working for both blacklisting and whitelisting.
+
+// Only the Front-end text has changed according to the mode it is set to.
+
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, /*InteractionResponseFlags,*/ MessageFlags } = require('discord.js');
 const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
@@ -14,23 +19,22 @@ function chunk(array, size) {
     }
     return result;
 }
+const bwlist = false;
+
+const modeName = bwlist ? "Black" : "White";
+const _modeName = bwlist ? "White" : "Black";
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('blacklist')
-        .setDescription('Blacklist channels from AutoLocking.'),
+        .setName('blacklist\whitelist')
+        .setDescription('Blacklist/Whitelist channels from AutoLocking.'),
     name: 'blacklist',
-    aliases: ['bl'],
+    aliases: ['bl', 'exclude', 'black', 'block', 'whitelist', 'wl', 'white', 'include', 'unblock', 'blist', 'wlist'],
 
     async execute(msg, args, client) {
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
             return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
         const prefix = await getPrefixForServer(msg.guild.id);
-        // if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-        //     !msg.member.permissions.has(PermissionFlagsBits.Administrator) &&
-        //     msg.author.id !== Seal) {
-        //     return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
-        // }
 
         // Handle legacy add/remove/clear quick commands
         const sub = args[0]?.toLowerCase();
@@ -51,7 +55,7 @@ module.exports = {
                 }
             }
             await saveBlacklistedChannels(msg.guild.id, blacklisted);
-            return msg.channel.send(added.length ? `Added: ${added.join(' ')} to the blacklist!` : 'No new channels were added.');
+            return msg.channel.send(added.length ? `Added: ${added.join(' ')} to the ${modeName.toLowerCase()}list!` : 'No new channels were added.');
         }
         if ((sub === 'remove' || sub === 'r') && args.length > 1) {
             if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
@@ -70,7 +74,7 @@ module.exports = {
                 }
             }
             await saveBlacklistedChannels(msg.guild.id, blacklisted);
-            return msg.channel.send(removed.length ? `Removed: ${removed.join(' ')} from the blacklist!` : 'No channels were removed.');
+            return msg.channel.send(removed.length ? `Removed: ${removed.join(' ')} from the ${modeName.toLowerCase()}list!` : 'No channels were removed.');
         }
         if (sub === 'clear' || sub === 'c') {
             if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
@@ -79,14 +83,14 @@ module.exports = {
                 return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
             }
             let blacklisted = await loadBlacklistedChannels(msg.guild.id) || [];
-            if (!blacklisted.length) return msg.channel.send('There are no blacklisted channels to clear.');
+            if (!blacklisted.length) return msg.channel.send(`There are no ${modeName.toLowerCase()}listed channels to clear.`);
             const uniqueId = makeUniqueId();
             const confirmRow = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`bl_clear_confirm_${uniqueId}`).setLabel('Confirm').setStyle(ButtonStyle.Danger),
                 new ButtonBuilder().setCustomId(`bl_clear_cancel_${uniqueId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary)
             );
             const confirmMsg = await msg.channel.send({
-                content: `Are you sure you want to clear **${blacklisted.length}** blacklisted channel(s)?`,
+                content: `Are you sure you want to clear **${blacklisted.length}** ${modeName.toLowerCase()}listed channel(s)?`,
                 components: [confirmRow]
             });
             const filter = i => i.user.id === msg.author.id && !i.user.bot && i.customId.endsWith(uniqueId);
@@ -94,7 +98,7 @@ module.exports = {
             collector.on('collect', async i => {
                 if (i.customId === `bl_clear_confirm_${uniqueId}`) {
                     await saveBlacklistedChannels(msg.guild.id, []);
-                    await i.update({ content: 'Cleared all blacklisted channels.', components: [] });
+                    await i.update({ content: `Cleared all ${modeName.toLowerCase()}listed channels.`, components: [] });
                 } else if (i.customId === `bl_clear_cancel_${uniqueId}`) {
                     await i.update({ content: 'Cancelled.', components: [] });
                 }
@@ -110,18 +114,13 @@ module.exports = {
             return;
         }
 
-        // Interactive UI for !blacklist
         return module.exports.showBlacklistUI(msg.channel, msg.author.id, msg.guild.id);
     },
 
     async executeInteraction(interaction, client) {
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
             return interaction.reply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
-        // if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) &&
-        //     !interaction.member.permissions.has(PermissionFlagsBits.Administrator) &&
-        //     interaction.user.id !== Seal) {
-        //     return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
-        // }
+
         await module.exports.showBlacklistUI(interaction.channel, interaction.user.id, interaction.guild.id, interaction);
     },
 
@@ -134,11 +133,12 @@ module.exports = {
             const pages = getPages();
             const desc = pages[p]?.length
                 ? pages[p].map(id => `<#${id}>`).join('\n')
-                : '_No blacklisted channels_';
+                : `_No ${modeName.toLowerCase()}listed channels_`;
             return new EmbedBuilder()
                 .setColor(embedColor)
-                .setTitle('Blacklisted Channels')
-                .setDescription("P2Lock won't lock in Blacklisted Channels.")
+                .setTitle(`${modeName}listed Channels`)
+                .setDescription(`P2Lock won't lock in ${modeName.toLowerCase()}listed channels.
+                \n-# Run \`${prefix}toggle ${modeName.toLowerCase()}list\` to change the mode to ${_modeName.toLowerCase()}list.`)
                 .addFields({ name: 'Channels', value: desc })
                 .setFooter({ text: `Page ${p + 1}/${Math.max(1, pages.length)}` });
         };
@@ -198,7 +198,7 @@ module.exports = {
                         .setMinValues(1)
                         .setMaxValues(5)
                 );
-                await i.reply({ content: 'Select channel(s) to add to the blacklist:', components: [addRow], flags: MessageFlags.Ephemeral });
+                await i.reply({ content: `Select channel(s) to add to the ${modeName.toLowerCase()}list:`, components: [addRow], flags: MessageFlags.Ephemeral });
                 const menuMsg = await i.fetchReply();
                 const menuCollector = menuMsg.createMessageComponentCollector({
                     filter: btn => btn.user.id === userId && !btn.user.bot && btn.customId === 'bl_add_select',
@@ -215,7 +215,7 @@ module.exports = {
                     }
                     await saveBlacklistedChannels(guildId, blacklisted);
                     await menuI.update({
-                        content: changed ? `Added: ${menuI.values.map(id => `<#${id}>`).join(' ')} to the blacklist!` : 'No new channels were added.',
+                        content: changed ? `Added: ${menuI.values.map(id => `<#${id}>`).join(' ')} to the ${modeName.toLowerCase()}list!` : 'No new channels were added.',
                         components: []
                     });
                     // Update main UI
@@ -240,7 +240,7 @@ module.exports = {
                         .setMinValues(1)
                         .setMaxValues(Math.min(5, blacklisted.length))
                 );
-                await i.reply({ content: 'Select channel(s) to remove from the blacklist:', components: [removeRow], flags: MessageFlags.Ephemeral });
+                await i.reply({ content: `Select channel(s) to remove from the ${modeName.toLowerCase()}list:`, components: [removeRow], flags: MessageFlags.Ephemeral });
                 const menuMsg = await i.fetchReply();
                 const menuCollector = menuMsg.createMessageComponentCollector({
                     filter: btn => btn.user.id === userId && !btn.user.bot && btn.customId === 'bl_remove_select',
@@ -257,7 +257,7 @@ module.exports = {
                     }
                     await saveBlacklistedChannels(guildId, blacklisted);
                     await menuI.update({
-                        content: removed.length ? `Removed: ${removed.join(' ')} from the blacklist!` : 'No channels were removed.',
+                        content: removed.length ? `Removed: ${removed.join(' ')} from the ${modeName.toLowerCase()}list!` : 'No channels were removed.',
                         components: []
                     });
                     // Update main UI
@@ -279,7 +279,7 @@ module.exports = {
                     new ButtonBuilder().setCustomId(`bl_clear_cancel_${uniqueId}`).setLabel('Cancel').setStyle(ButtonStyle.Secondary)
                 );
                 await i.reply({
-                    content: `Are you sure you want to clear **${blacklisted.length}** blacklisted channel(s)?`,
+                    content: `Are you sure you want to clear **${blacklisted.length}** ${modeName.toLowerCase()}isted channel(s)?`,
                     components: [confirmRow],
                     flags: MessageFlags.Ephemeral
                 });
@@ -289,7 +289,7 @@ module.exports = {
                 confirmCollector.on('collect', async btn => {
                     if (btn.customId === `bl_clear_confirm_${uniqueId}`) {
                         await saveBlacklistedChannels(guildId, []);
-                        await btn.update({ content: 'Cleared all blacklisted channels.', components: [] });
+                        await btn.update({ content: `Cleared all ${modeName.toLowerCase()}listed channels.`, components: [] });
                     } else if (btn.customId === `bl_clear_cancel_${uniqueId}`) {
                         await btn.update({ content: 'Cancelled.', components: [] });
                     }
