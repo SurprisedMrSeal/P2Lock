@@ -1,4 +1,4 @@
-module.exports = { ver: '2.11.0' };
+module.exports = { ver: '2.11.1' };
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -54,7 +54,15 @@ module.exports = {
                     return msg.reply("⚠️ Couldn't find that channel.");
                 }
 
+                if (!channel.permissionsFor(msg.author).has(PermissionFlagsBits.SendMessages) ||
+                    !channel.permissionsFor(msg.author).has(PermissionFlagsBits.ViewChannel)) {
+                    return msg.reply({ content: `❌ You need \`Send Messages\` permission in ${channel} to lock.` });
+                }
+
                 if (channel.type === ChannelType.GuildCategory) {
+                    if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id != Seal) {
+                        return msg.reply('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+                    }
                     await msg.reply({ content: "Category detected, locking the entire category...", allowedMentions: { users: [] } });
 
                     const targetMember = await msg.guild.members.fetch(P2);
@@ -119,11 +127,13 @@ module.exports = {
             const member = await interaction.guild.members.fetch(P2);
             if (!member) {
                 return interaction.editReply({
-                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral });
+                    content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral
+                });
             }
         } catch (err) {
             return interaction.editReply({
-                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral });
+                content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to lock the channel!`, flags: MessageFlags.Ephemeral
+            });
         }
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.' });
@@ -152,7 +162,15 @@ module.exports = {
                     return interaction.editReply({ content: "⚠️ Couldn't find that channel.", flags: MessageFlags.Ephemeral });
                 }
 
+                if (!channel.permissionsFor(interaction.member).has(PermissionFlagsBits.SendMessages) ||
+                    !channel.permissionsFor(interaction.member).has(PermissionFlagsBits.ViewChannel)) {
+                    return interaction.followUp({ content: `❌ You need \`Send Messages\` permission in ${channel} to lock.`, flags: MessageFlags.Ephemeral });
+                }
+
                 if (channel.type === ChannelType.GuildCategory) {
+                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                        return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
+                    }
                     await interaction.editReply({ content: "Category detected, locking the entire category..." });
 
                     const targetMember = await interaction.guild.members.fetch(P2);
@@ -189,7 +207,7 @@ module.exports = {
             if (toggleableFeatures.adminMode) {
                 await channel.send(`This channel has been locked. Ask an admin to unlock this channel!`);
                 if (channel.id !== interaction.channel.id) {
-                    await interaction.editReply({ content: `Locked ${channel}`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+                    await interaction.editReply({ content: `Locked ${channel}.`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
                 }
             } else {
                 const row = new ActionRowBuilder().addComponents(
@@ -201,7 +219,7 @@ module.exports = {
                     allowedMentions: { users: [] }
                 });
                 if (channel.id !== interaction.channel.id) {
-                    await interaction.editReply({ content: `Locked ${channel}`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+                    await interaction.editReply({ content: `Locked ${channel}.`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
                 }
             }
         } catch (error) {
