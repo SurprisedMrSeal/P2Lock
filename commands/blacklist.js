@@ -1,11 +1,11 @@
-module.exports = { ver: '2.12.0' };
+module.exports = { ver: '2.12.3' };
 // Most variables have been left as "blacklist", including the filename despite 
 // working for both blacklisting and whitelisting.
 
 // Only the Front-end text has changed according to the mode it is set to.
 
 const { EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelSelectMenuBuilder, ChannelType, SlashCommandBuilder, /*InteractionResponseFlags,*/ MessageFlags } = require('discord.js');
-const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer } = require('../mongoUtils');
+const { saveBlacklistedChannels, loadBlacklistedChannels, getPrefixForServer, loadToggleableFeatures } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
 
 function makeUniqueId() {
@@ -19,10 +19,6 @@ function chunk(array, size) {
     }
     return result;
 }
-const bwlist = false;
-
-const modeName = bwlist ? "Black" : "White";
-const _modeName = bwlist ? "White" : "Black";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -32,9 +28,11 @@ module.exports = {
     aliases: ['bl', 'exclude', 'black', 'block', 'whitelist', 'wl', 'white', 'include', 'unblock', 'blist', 'wlist'],
 
     async execute(msg, args, client) {
+        const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
+        const modeName = toggleableFeatures.bwlist ? "Black" : "White";
+
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
             return msg.channel.send({ content: "⚠️ I need the `Embed Links` permission to send this embed!" });
-        const prefix = await getPrefixForServer(msg.guild.id);
 
         // Handle legacy add/remove/clear quick commands
         const sub = args[0]?.toLowerCase();
@@ -126,6 +124,12 @@ module.exports = {
 
     // Shared UI for both prefix and slash
     async showBlacklistUI(channel, userId, guildId, interaction) {
+        const toggleableFeatures = await loadToggleableFeatures(guildId);
+        const modeName = toggleableFeatures.bwlist ? "Black" : "White";
+        const _modeName = toggleableFeatures.bwlist ? "White" : "Black";
+
+        const prefix = await getPrefixForServer(guildId);
+
         let blacklisted = await loadBlacklistedChannels(guildId) || [];
         let page = 0;
         const getPages = () => chunk(blacklisted, 20);

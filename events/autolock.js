@@ -1,4 +1,4 @@
-module.exports = { ver: '2.10.2' };
+module.exports = { ver: '2.12.3' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -14,13 +14,18 @@ module.exports = {
     name: 'messageCreate',
     async execute(msg, client) {
         if (!msg.guild) return;
-        const prefix = await getPrefixForServer(msg.guild.id);
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const blacklistedChannels = await loadBlacklistedChannels(msg.guild.id);
+
+        if (
+            !msg.channel ||
+            (toggleableFeatures.bwlist && blacklistedChannels.includes(msg.channel.id)) || // Blacklist mode and this channel is listed, return
+            (!toggleableFeatures.bwlist && !blacklistedChannels.includes(msg.channel.id)) // Whitelist mode and this channel is not listed, return
+        ) return;
+
+        const prefix = await getPrefixForServer(msg.guild.id);
         const eventList = await getEventList();
         const customList = await getCustomList(msg.guild.id);
-
-        if (!msg.channel || blacklistedChannels.includes(msg.channel.id)) return;
 
         const lines = msg.content.split('\n');
         let islocked = false;
@@ -217,7 +222,7 @@ module.exports = {
                 m.author.id === client.user.id &&
                 m.content &&
                 (m.content.includes("This channel will be locked") ||
-                m.content.includes("This channel has been locked."));
+                    m.content.includes("This channel has been locked."));
 
             const collector = msg.channel.createMessageCollector({ filter, time: 7500, max: 1 });
             collector.on("collect", async () => {

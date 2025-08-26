@@ -1,4 +1,5 @@
-//v2.8.1
+module.exports = { ver: '2.12.3' };
+
 const { loadToggleableFeatures, loadBlacklistedChannels, getPrefixForServer, getAfkPingOptOutList } = require('../mongoUtils');
 const { Pname, P2a, P2a_P, Seal } = require('../utils');
 
@@ -12,7 +13,12 @@ module.exports = {
         if (!toggleableFeatures.pingAfk) return;
 
         const blacklistedChannels = await loadBlacklistedChannels(msg.guild.id);
-        if (!msg.channel || blacklistedChannels.includes(msg.channel.id)) return;
+
+        if (
+            !msg.channel ||
+            (toggleableFeatures.bwlist && blacklistedChannels.includes(msg.channel.id)) || // Blacklist mode and this channel is listed, return
+            (!toggleableFeatures.bwlist && !blacklistedChannels.includes(msg.channel.id)) // Whitelist mode and this channel is not listed, return
+        ) return;
 
         const isFromValidAuthor = [Pname, P2a, P2a_P, Seal].includes(msg.author.id);
         if (!isFromValidAuthor) return;
