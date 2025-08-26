@@ -1,4 +1,4 @@
-module.exports = { ver: '2.9.4' };
+module.exports = { ver: '2.12.1' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -16,7 +16,8 @@ const featureDisplayName = {
     lockAfk: 'LockAfk\n`Toggle whether it locks for AFK users (Locks if true).`',
     pingAfk: 'PingAfk\n`Toggle whether it pings AFK shiny hunters.`',
     autoPin: 'AutoPin\n`Toggle whether it pins a "Shiny caught" message.`',
-    adminMode: 'AdminMode\n`Toggle whether the lock/unlock commands are admin only.`'
+    adminMode: 'AdminMode\n`Toggle whether the lock/unlock commands are admin only.`',
+    bwlist: 'Blacklist`/`Whitelist\n`Toggle whether channels are blacklisted or whitelisted to lock.`'
 };
 
 async function buildTogglePagedEmbed(toggleableFeatures, page = 1, mode) {
@@ -33,7 +34,12 @@ async function buildTogglePagedEmbed(toggleableFeatures, page = 1, mode) {
 
     current.forEach(featureName => {
         const displayName = featureDisplayName[featureName];
-        const featureState = toggleableFeatures[featureName] ? '🟩 On' : '⬛ Off';
+        let featureState;
+        if (featureName === "bwlist") {
+            featureState = toggleableFeatures[featureName] ? "🔳 Blacklist" : "⬜ Whitelist";
+        } else {
+            featureState = toggleableFeatures[featureName] ? "🟩 On" : "⬛ Off";
+        }
         embed.addFields({ name: displayName, value: featureState, inline: false });
     });
 
@@ -65,7 +71,8 @@ module.exports = {
                 { name: 'LockAfk', value: 'lockAfk' },
                 { name: 'PingAfk', value: 'pingAfk' },
                 { name: 'AutoPin', value: 'autoPin' },
-                { name: 'AdminMode', value: 'adminMode' }
+                { name: 'AdminMode', value: 'adminMode' },
+                { name: 'Blacklist/Whitelist', value: 'bwlist' }
             )
         )
         .addBooleanOption(opt => opt
@@ -192,6 +199,22 @@ module.exports = {
                 toggleableFeatures.adminMode = !toggleableFeatures.adminMode;
                 msg.channel.send(`${toggleableFeatures.adminMode ? '🟩' : '⬛'} **AdminMode** toggled ${toggleableFeatures.adminMode ? 'on' : 'off'}.`);
                 break;
+            case 'blacklist':
+            case 'whitelist':
+            case 'blacklist/whitelist':
+            case 'black':
+            case 'white':
+            case 'bwlist':
+            case 'blist':
+            case 'wlist':
+            case 'bl':
+            case 'wl':
+                if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id !== Seal) {
+                    return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+                }
+                toggleableFeatures.bwlist = !toggleableFeatures.bwlist;
+                msg.channel.send(`${toggleableFeatures.bwlist ? '🔳' : '⬜'} **Mode** switched to ${toggleableFeatures.adminMode ? 'blacklist' : 'whitelist'}.`);
+                break;
             default:
                 let page = 1;
                 const { embed, totalPages } = await buildTogglePagedEmbed(
@@ -246,7 +269,8 @@ module.exports = {
                 lockAfk: 'LockAfk',
                 pingAfk: 'PingAfk',
                 autoPin: 'AutoPin',
-                adminMode: 'AdminMode'
+                adminMode: 'AdminMode',
+                bwlist: 'Blacklist/Whitelist'
             };
             const name = displayNames[setting] || setting;
             const emoji = newState ? '🟩' : '⬛';
@@ -260,6 +284,9 @@ module.exports = {
             }
             if (setting === 'lockAfk') {
                 message += `\n-# Bot will now ${newState ? 'lock regardless of user AFK status' : 'NOT lock if all users are AFK'}.`;
+            }
+            if (setting === 'bwlist') {
+                message = `${newState ? '🔳 **Mode** switched to blacklist' : '⬜ **Mode** switched to whitelist'}.`;
             }
 
             return interaction.editReply({ content: message });

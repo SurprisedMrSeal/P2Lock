@@ -1,4 +1,4 @@
-module.exports = { ver: '2.10.0' };
+module.exports = { ver: '2.12.1' };
 
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
@@ -165,6 +165,7 @@ function getDefaultToggleableFeatures() {
         pingAfk: false,
         autoPin: false,
         adminMode: false,
+        bwlist: true,
     };
 }
 
