@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.3' };
+module.exports = { ver: '2.12.5' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -215,7 +215,7 @@ module.exports = {
             setTimeout(() => errorCooldowns.delete(msg.channel.id), CHANNEL_COOLDOWN_MS);
 
             const afkMessage = await msg.channel.send(
-                `All mentioned users are AFK, channel will not be locked.\n-# Run \`${prefix}toggle lockAfk\` to enable locking for AFK users.`
+                `All mentioned users are AFK, channel will not be locked.`
             );
 
             const filter = m =>
