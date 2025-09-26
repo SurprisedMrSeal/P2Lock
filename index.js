@@ -1,4 +1,5 @@
-//v2.6.1
+module.exports = { ver: '2.12.6' };
+
 const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
@@ -45,7 +46,7 @@ for (const file of eventFiles) {
 connectToMongo();
 
 // Ready Event
-client.on('ready', async () => {
+client.on('clientReady', async () => {
     try {
         client.user.setPresence({
             activities: [{ name: `@P2Lock help | 🔒`, type: ActivityType.Playing }],
