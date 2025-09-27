@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.5' };
+module.exports = { ver: '2.12.7' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -90,7 +90,14 @@ module.exports = {
                             m.mentions.has(P2) &&
                             !m.reference &&
                             !m.author.bot
+                        ) ||
+                        (
+                            m.content.startsWith(prefix) &&
+                            ["u", "ul", "unlock"].includes(
+                                m.content.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase()
+                            )
                         );
+
                     const collector = msg.channel.createMessageCollector({
                         filter,
                         time: delaySeconds * 1000
