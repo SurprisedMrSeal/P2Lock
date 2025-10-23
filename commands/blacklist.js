@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.3' };
+module.exports = { ver: '2.12.8' };
 // Most variables have been left as "blacklist", including the filename despite 
 // working for both blacklisting and whitelisting.
 
@@ -22,10 +22,10 @@ function chunk(array, size) {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('blacklist\whitelist')
-        .setDescription('Blacklist/Whitelist channels from AutoLocking.'),
+        .setName('blacklist_whitelist')
+        .setDescription('Blacklist/Whitelist channels from AutoLocking. (Run for more details)'),
     name: 'blacklist',
-    aliases: ['bl', 'exclude', 'black', 'block', 'whitelist', 'wl', 'white', 'include', 'unblock', 'blist', 'wlist'],
+    aliases: ['bl', 'exclude', 'black', 'block', 'whitelist', 'wl', 'white', 'include', 'unblock', 'blist', 'wlist', 'blacklistwhitelist', 'blacklist_whitelist'],
 
     async execute(msg, args, client) {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
@@ -116,11 +116,22 @@ module.exports = {
     },
 
     async executeInteraction(interaction, client) {
-        if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks))
-            return interaction.reply({ content: "⚠️ I need the `Embed Links` permission to send this embed! 🤐", flags: MessageFlags.Ephemeral });
+    try {
+        if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.EmbedLinks)) {
+            return interaction.reply({
+                content: "⚠️ I need the `Embed Links` permission to send this embed!",
+                flags: MessageFlags.Ephemeral
+            });
+        }
 
         await module.exports.showBlacklistUI(interaction.channel, interaction.user.id, interaction.guild.id, interaction);
-    },
+    } catch (err) {
+        console.error(`(blacklist_whitelist) Slash command error:`, err);
+        if (!interaction.replied) {
+            await interaction.reply({ content: '❌ An error occurred while running this command.', flags: MessageFlags.Ephemeral });
+        }
+    }
+},
 
     // Shared UI for both prefix and slash
     async showBlacklistUI(channel, userId, guildId, interaction) {
