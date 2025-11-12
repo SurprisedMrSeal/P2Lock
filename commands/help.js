@@ -1,11 +1,11 @@
-module.exports = { ver: '2.12.4' };
+module.exports = { ver: '2.12.9' };
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime, P2 } = require('../utils');
 
 const commandDefs = prefix => [
-  { name: 'help', description: `Shows this menu.\n\`${prefix}help\`` },
+  { name: 'help', description: `Displays some bot setup suggestions and the command list (this!).\n\`${prefix}help\`` },
   { name: 'ping', description: `Displays the bot's latency.\n\`${prefix}ping\`` },
   { name: 'lock', description: `Locks the current channel.\n\`${prefix}lock <>\` \`${prefix}l <>\`` },
   { name: 'unlock', description: `Unlocks the current channel.\n\`${prefix}unlock <>\` \`${prefix}u <>\`` },
@@ -14,7 +14,7 @@ const commandDefs = prefix => [
   { name: 'pingafk', description: `[Pings the afk members using Poké-Name or P2 Assistant.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk <>\` \`${prefix}pa <>\`` },
   { name: 'custom', description: `Lets you lock for specific Pokémon, excluding pings.\n\`${prefix}custom <> <>\` \`${prefix}cs <> <>\`` },
   { name: 'locklist', description: `Shows a list of all the locked channels in the server.\n\`${prefix}locklist\` \`${prefix}ll\`` },
-  { name: 'blacklist', description: `Lets you blacklist channels from getting automatically locked.\n\`${prefix}blacklist <>\` \`${prefix}bl <>\`` },
+  { name: 'blacklist/whitelist', description: `Lets you blacklist or whitelist channels from getting automatically locked.\n\`${prefix}blacklist <> []\` \`${prefix}bl <> []\` \`${prefix}whitelist <> []\` \`${prefix}wl <> []\`` },
   { name: 'suggest', description: `Sends your suggestion to the developer.\n\`${prefix}suggest []\`` },
   { name: 'report', description: `Sends your report to the developer.\n\`${prefix}report []\`` },
   { name: 'info', description: `Gives you some information about the Bot.\n\`${prefix}info\`` },
