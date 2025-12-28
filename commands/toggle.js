@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.2' };
+module.exports = { ver: '2.12.10' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -163,7 +163,7 @@ module.exports = {
                     return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
                 }
                 toggleableFeatures.includeCustomLocks = !toggleableFeatures.includeCustomLocks;
-                msg.channel.send(`${toggleableFeatures.includeCustomLocks ? '🟩' : '⬛'} **Custom Lock** toggled ${toggleableFeatures.includeCustomLocks ? `on.\n\nRun \`${prefix}custom add <names>\` to add them to the list` : 'off'}.`);
+                msg.channel.send(`${toggleableFeatures.includeCustomLocks ? '🟩' : '⬛'} **Custom Lock** toggled ${toggleableFeatures.includeCustomLocks ? `on.\n\nRun \`${prefix}custom add <names>\` to add them to the list.\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable)` : 'off'}.`);
                 break;
             case 'lockafk':
             case 'afklock':
@@ -280,7 +280,7 @@ module.exports = {
                 message += `\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`;
             }
             if (setting === 'includeCustomLocks' && newState === true) {
-                message += `\n\nRun \`${prefix}custom add <names>\` to add them to the list.`;
+                message += `\n\nRun \`${prefix}custom add <names>\` to add them to the list.\n-# Run \`-toggle textnaming\` to make it work with Poké-Name (enable).`;
             }
             if (setting === 'lockAfk') {
                 message += `\n-# Bot will now ${newState ? 'lock regardless of user AFK status' : 'NOT lock if all users are AFK'}.`;
