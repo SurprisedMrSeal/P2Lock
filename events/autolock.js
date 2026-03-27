@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.7' };
+module.exports = { ver: '2.12.11' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -9,6 +9,22 @@ const errorCooldowns = new Map();
 const unlockIntervals = new Map();
 
 const CHANNEL_COOLDOWN_MS = 10 * 1000;
+
+function cleanupChannel(channelId) {
+    lockCooldowns.delete(channelId);
+    errorCooldowns.delete(channelId);
+    const interval = unlockIntervals.get(channelId);
+    if (interval) {
+        clearInterval(interval);
+        unlockIntervals.delete(channelId);
+    }
+}
+
+function cleanupGuild(guild) {
+    for (const channel of guild.channels.cache.values()) {
+        cleanupChannel(channel.id);
+    }
+}
 
 module.exports = {
     name: 'messageCreate',
@@ -236,53 +252,83 @@ module.exports = {
                 try { await afkMessage.delete(); } catch { }
             });
         }
+    },
+    
+    onChannelDelete(channel) {
+        cleanupChannel(channel.id);
+    },
+    onGuildDelete(guild) {
+        cleanupGuild(guild);
     }
 };
+
+const MAX_RETRIES = 5;
 
 async function startUnlockCheck(guild, clientUserId, channelId, timerMinutes) {
     // Avoid duplicate intervals
     if (unlockIntervals.has(channelId)) return;
+
+    let consecutiveErrors = 0;
+
     const interval = setInterval(async () => {
+        const cleanup = () => {
+            clearInterval(interval);
+            unlockIntervals.delete(channelId);
+        };
+
         try {
             const channel = guild.channels.cache.get(channelId);
-            if (!channel) {
-                clearInterval(interval);
-                unlockIntervals.delete(channelId);
-                return;
-            }
+            if (!channel) return cleanup();
+
             const activeLock = await getActiveLock(guild.id, clientUserId, channelId);
-            if (!activeLock) {
-                clearInterval(interval);
-                unlockIntervals.delete(channelId);
-                return;
-            }
+            if (!activeLock) return cleanup();
+
             const now = Math.floor(Date.now() / 1000);
-            if (now >= activeLock.unlockTime) {
-                const targetMember = await guild.members.fetch(P2).catch(() => null);
-                if (!targetMember) {
-                    await removeActiveLock(guild.id, clientUserId, channelId);
-                    clearInterval(interval);
-                    unlockIntervals.delete(channelId);
-                    return;
-                }
-                const currentOverwrite = channel.permissionOverwrites.cache.get(targetMember.id);
-                if (!currentOverwrite ||
-                    (!currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) &&
-                        !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))) {
-                    await removeActiveLock(guild.id, clientUserId, channelId);
-                    clearInterval(interval);
-                    unlockIntervals.delete(channelId);
-                    return;
-                }
-                await channel.permissionOverwrites.edit(targetMember.id, { ViewChannel: true, SendMessages: true });
-                await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
+            if (now < activeLock.unlockTime) return;
+
+            const targetMember = await guild.members.fetch(P2).catch(() => null);
+            if (!targetMember) {
                 await removeActiveLock(guild.id, clientUserId, channelId);
-                clearInterval(interval);
-                unlockIntervals.delete(channelId);
+                return cleanup();
             }
+
+            const currentOverwrite = channel.permissionOverwrites.cache.get(targetMember.id);
+
+            // If already unlocked manually
+            if (
+                !currentOverwrite ||
+                (!currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) &&
+                 !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))
+            ) {
+                await removeActiveLock(guild.id, clientUserId, channelId);
+                return cleanup();
+            }
+
+            // Auto-unlock
+            await channel.permissionOverwrites.edit(targetMember.id, {
+                ViewChannel: true,
+                SendMessages: true
+            });
+
+            await channel.send(`⌛ This channel has been automatically unlocked after ${timerMinutes} minutes.`);
+            await removeActiveLock(guild.id, clientUserId, channelId);
+
+            // FIX: reset error counter on success, then cleanup normally
+            consecutiveErrors = 0;
+            return cleanup();
+
         } catch (err) {
             console.error('(AutoUnlock) Error in auto-unlock check:', err);
+            consecutiveErrors++;
+
+            // FIX: bail out after too many consecutive errors to avoid infinite resource burn
+            if (consecutiveErrors >= MAX_RETRIES) {
+                console.error(`(AutoUnlock) Giving up on channel ${channelId} after ${MAX_RETRIES} consecutive errors.`);
+                return cleanup();
+            }
+            // Don't cleanup yet — will retry next tick
         }
     }, 60 * 1000); // Check every minute
+
     unlockIntervals.set(channelId, interval);
 }
