@@ -1,4 +1,4 @@
-module.exports = { ver: '2.11.1' };
+module.exports = { ver: '2.12.12' };
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -30,7 +30,7 @@ module.exports = {
         }
 
         if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-            return msg.channel.send('⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.');
+            return msg.channel.send('⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.');
         }
         // Check user permissions if adminMode is enabled
         if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id != Seal) {
@@ -136,7 +136,7 @@ module.exports = {
             });
         }
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Permissions` permission to lock this channel.' });
+            return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.' });
         }
         // Check user permissions if adminMode is enabled
         if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {

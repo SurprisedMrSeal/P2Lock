@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.11' };
+module.exports = { ver: '2.12.12' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -86,7 +86,7 @@ module.exports = {
             }, CHANNEL_COOLDOWN_MS);
 
             if (!msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
-                return msg.channel.send('⚠️ Error: I don\'t have the `Manage Permissions` permission to lock this channel.');
+                return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to lock this channel.');
             }
 
             try {
