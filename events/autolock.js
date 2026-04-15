@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.12' };
+module.exports = { ver: '2.12.14' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -212,7 +212,7 @@ module.exports = {
 
             } catch (error) {
                 console.error('(AutoLock) Error in lock command:', error);
-                return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.\nPermission Missing.').catch(error => console.error('(AutoLock) Error sending lock error message:', error));
+                return msg.channel.send('⚠️ Hmm, something prevented me from locking this channel.\n Try giving me the `Manage Permissions` permission.\n-# If the problem persists, please report the issue!').catch(error => console.error('(AutoLock) Error sending lock error message:', error));
             }
         }
 
