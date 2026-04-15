@@ -1,4 +1,5 @@
-//v2.5.5
+module.exports = { ver: '2.12.13' };
+
 const { PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
@@ -16,9 +17,9 @@ module.exports = {
             && msg.content.includes("These colors seem unusual")) {
             if (!toggleableFeatures.autoPin) return;
 
-            if (!msg.channel.permissionsFor(msg.guild.members.me).has(PermissionFlagsBits.ManageMessages)) {
+            if (!msg.channel.permissionsFor(msg.guild.members.me).has(PermissionFlagsBits.PinMessages)) {
                 return msg.channel.send(
-                    `⚠️ Error: I don't have the \`Manage Messages\` permission to pin this message.\n` +
+                    `⚠️ Error: I don't have the \`Pin Messages\` permission to pin this message.\n` +
                     `You can run \`${prefix}toggle autopin\` to disable AutoPin.`
                 );
             }
