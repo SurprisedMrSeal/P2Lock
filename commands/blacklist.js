@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.8' };
+module.exports = { ver: '2.12.16' };
 // Most variables have been left as "blacklist", including the filename despite 
 // working for both blacklisting and whitelisting.
 
@@ -137,7 +137,6 @@ module.exports = {
     async showBlacklistUI(channel, userId, guildId, interaction) {
         const toggleableFeatures = await loadToggleableFeatures(guildId);
         const modeName = toggleableFeatures.bwlist ? "Black" : "White";
-        const _modeName = toggleableFeatures.bwlist ? "White" : "Black";
 
         const prefix = await getPrefixForServer(guildId);
 
@@ -152,8 +151,8 @@ module.exports = {
             return new EmbedBuilder()
                 .setColor(embedColor)
                 .setTitle(`${modeName}listed Channels`)
-                .setDescription(`P2Lock won't lock in ${modeName.toLowerCase()}listed channels.
-                \n-# Run \`${prefix}toggle ${modeName.toLowerCase()}list\` to change the mode to ${_modeName.toLowerCase()}list.`)
+                .setDescription(`P2Lock ${toggleableFeatures.bwlist ? "WON'T" : "will ONLY"} lock in ${modeName.toLowerCase()}listed channels.
+                \n-# Run \`${prefix}toggle ${modeName.toLowerCase()}list\` to change the mode to ${toggleableFeatures.bwlist ? "White" : "Black"}list.`)
                 .addFields({ name: 'Channels', value: desc })
                 .setFooter({ text: `Page ${p + 1}/${Math.max(1, pages.length)}` });
         };
