@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.12' };
+module.exports = { ver: '2.12.15' };
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -70,7 +70,12 @@ module.exports = {
                     await channel.permissionOverwrites.edit(targetMember, { ViewChannel: false, SendMessages: false });
 
                     for (const child of channel.children.cache.values()) {
-                        await child.lockPermissions();
+                        const childPermissions = child.permissionOverwrites.cache.get(targetMember.id);
+                        if (childPermissions) {
+                            await child.permissionOverwrites.edit(targetMember, { ViewChannel: false, SendMessages: false });
+                        } else {
+                            await child.permissionOverwrites.create(targetMember, { ViewChannel: false, SendMessages: false });
+                        }
                     }
 
                     return msg.channel.send(`Category **${channel.name}** has been locked.`);
@@ -178,7 +183,12 @@ module.exports = {
                     await channel.permissionOverwrites.edit(targetMember, { ViewChannel: false, SendMessages: false });
 
                     for (const child of channel.children.cache.values()) {
-                        await child.lockPermissions();
+                        const childPermissions = child.permissionOverwrites.cache.get(targetMember.id);
+                        if (childPermissions) {
+                            await child.permissionOverwrites.edit(targetMember, { ViewChannel: false, SendMessages: false });
+                        } else {
+                            await child.permissionOverwrites.create(targetMember, { ViewChannel: false, SendMessages: false });
+                        }
                     }
 
                     return interaction.followUp({ content: `Category **${channel.name}** has been locked.` });

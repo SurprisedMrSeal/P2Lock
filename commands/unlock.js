@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.12' };
+module.exports = { ver: '2.12.15' };
 
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
@@ -69,7 +69,12 @@ module.exports = {
                     await channel.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
 
                     for (const child of channel.children.cache.values()) {
-                        await child.lockPermissions();
+                        const childPermissions = child.permissionOverwrites.cache.get(targetMember.id);
+                        if (childPermissions) {
+                            await child.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
+                        } else {
+                            await child.permissionOverwrites.create(targetMember, { ViewChannel: true, SendMessages: true });
+                        }
                     }
 
                     return msg.channel.send(`Category **${channel.name}** has been unlocked.`);
@@ -173,7 +178,12 @@ module.exports = {
                     await channel.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
 
                     for (const child of channel.children.cache.values()) {
-                        await child.lockPermissions();
+                        const childPermissions = child.permissionOverwrites.cache.get(targetMember.id);
+                        if (childPermissions) {
+                            await child.permissionOverwrites.edit(targetMember, { ViewChannel: true, SendMessages: true });
+                        } else {
+                            await child.permissionOverwrites.create(targetMember, { ViewChannel: true, SendMessages: true });
+                        }
                     }
 
                     return interaction.followUp({ content: `Category **${channel.name}** has been unlocked.` });
