@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.14' };
+module.exports = { ver: '2.12.17' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -101,17 +101,18 @@ module.exports = {
                     warningMessage = await msg.channel.send(`⏳ This channel will be locked <t:${lockTime}:R>`);
 
                     const filter = m =>
-                        m.author.id === P2 ||
+                        (m.author.id === P2 && m.content.startsWith("Congratulations")) ||
                         (
-                            m.mentions.has(P2) &&
                             !m.reference &&
-                            !m.author.bot
+                            !m.author.bot &&
+                            new RegExp(`^<@!?${P2}>\\s+(c|catch)\\b`, 'i').test(m.content)
                         ) ||
                         (
                             m.content.startsWith(prefix) &&
                             ["u", "ul", "unlock"].includes(
                                 m.content.slice(prefix.length).trim().split(/\s+/)[0].toLowerCase()
-                            )
+                            ) &&
+                            !toggleableFeatures.adminMode
                         );
 
                     const collector = msg.channel.createMessageCollector({
@@ -253,7 +254,7 @@ module.exports = {
             });
         }
     },
-    
+
     onChannelDelete(channel) {
         cleanupChannel(channel.id);
     },
@@ -298,7 +299,7 @@ async function startUnlockCheck(guild, clientUserId, channelId, timerMinutes) {
             if (
                 !currentOverwrite ||
                 (!currentOverwrite.deny.has(PermissionFlagsBits.ViewChannel) &&
-                 !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))
+                    !currentOverwrite.deny.has(PermissionFlagsBits.SendMessages))
             ) {
                 await removeActiveLock(guild.id, clientUserId, channelId);
                 return cleanup();
