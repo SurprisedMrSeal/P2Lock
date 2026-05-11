@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.17' };
+module.exports = { ver: '2.12.18' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -60,8 +60,8 @@ module.exports = {
             (
                 (toggleableFeatures.includeShinyHuntPings && hasPing('shiny hunt pings:')) ||
                 (toggleableFeatures.includeCollectionPings && hasPing('collection pings:')) ||
-                (toggleableFeatures.includeQuestPings && hasPing('quest pings:')) ||
-                (toggleableFeatures.includeTypePings && hasPing('type pings:')) ||
+                (toggleableFeatures.includeQuestPings && (hasPing('quest pings:') || hasPing('Quest Pings (Regional):'))) ||
+                (toggleableFeatures.includeTypePings && (hasPing('type pings:') || hasPing('Quest Pings (Types):'))) ||
                 (toggleableFeatures.includeRarePings && msg.content.toLowerCase().includes('rare ping:')) ||
                 (toggleableFeatures.includeRegionalPings && msg.content.toLowerCase().includes('regional ping:')) ||
                 (toggleableFeatures.includeEventPings
