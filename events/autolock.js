@@ -327,9 +327,8 @@ async function startUnlockCheck(guild, clientUserId, channelId, timerMinutes) {
                 console.error(`(AutoUnlock) Giving up on channel ${channelId} after ${MAX_RETRIES} consecutive errors.`);
                 return cleanup();
             }
-            // Don't cleanup yet — will retry next tick
         }
-    }, 180 * 1000); // Check every minute
+    }, 180 * 1000); // Check every 3 min
 
     unlockIntervals.set(channelId, interval);
 }

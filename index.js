@@ -18,13 +18,8 @@ const client = new Client({
     partials: [Partials.Message, Partials.Channel, Partials.Reaction],
     sweepers: {
         messages: { interval: 600, lifetime: 300 }//,
-        // users: { interval: 300, lifetime: 900 },
         // members: { interval: 300, lifetime: 1800 },
-        // guildMembers: { interval: 300, lifetime: 1800 },
     },
-    // makeCache: (manager) => {
-    //     return manager;
-    // }
 });
 
 client.commands = new Collection();
