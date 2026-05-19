@@ -1,6 +1,6 @@
-module.exports = { ver: '2.12.11' };
+module.exports = { ver: '2.13.0' };
 
-const { Client, GatewayIntentBits, Partials, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Sweepers, Collection, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ActivityType, MessageFlags } = require('discord.js');
 const { connectToMongo, getPrefixForServer, loadToggleableFeatures, getActiveLocks, removeActiveLock, getTimer } = require('./mongoUtils');
 const { P2, version } = require('./utils');
 require('dotenv').config();
@@ -16,6 +16,15 @@ const client = new Client({
         GatewayIntentBits.MessageContent,
     ],
     partials: [Partials.Message, Partials.Channel, Partials.Reaction],
+    sweepers: {
+        messages: { interval: 600, lifetime: 300 }//,
+        // users: { interval: 300, lifetime: 900 },
+        // members: { interval: 300, lifetime: 1800 },
+        // guildMembers: { interval: 300, lifetime: 1800 },
+    },
+    // makeCache: (manager) => {
+    //     return manager;
+    // }
 });
 
 client.commands = new Collection();
@@ -44,7 +53,7 @@ for (const file of eventFiles) {
 }
 
 client.on('channelDelete', channel => autolockEvent.onChannelDelete(channel));
-client.on('guildDelete',   guild   => autolockEvent.onGuildDelete(guild));
+client.on('guildDelete', guild => autolockEvent.onGuildDelete(guild));
 
 // Connect to MongoDB
 connectToMongo();
@@ -163,6 +172,14 @@ client.on('clientReady', async () => {
         }
     } catch (error) {
         console.error('Error during bot startup:', error);
+    }
+    let globalUnlockInterval = null;
+
+    function startGlobalUnlockChecker(client) {
+        if (globalUnlockInterval) return;
+
+        globalUnlockInterval = setInterval(async () => {
+        }, 30* 1000);
     }
 });
 

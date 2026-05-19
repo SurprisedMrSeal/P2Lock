@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.18' };
+module.exports = { ver: '2.13.0' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
@@ -329,7 +329,7 @@ async function startUnlockCheck(guild, clientUserId, channelId, timerMinutes) {
             }
             // Don't cleanup yet — will retry next tick
         }
-    }, 60 * 1000); // Check every minute
+    }, 180 * 1000); // Check every minute
 
     unlockIntervals.set(channelId, interval);
 }
