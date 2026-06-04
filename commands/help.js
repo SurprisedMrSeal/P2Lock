@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.9' };
+module.exports = { ver: '2.13.1' };
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
@@ -75,7 +75,7 @@ module.exports = {
         `- Use \`${prefix}config\` to configure the bot's prefix, delay to lock, and timer to automatically unlock.`,
         `- Use \`${prefix}blacklist\` to blacklist channels from getting locked automatically.`,
         '',
-        '[Bot Invite](https://discord.com/oauth2/authorize?client_id=806723110761136169) | [GitHub](https://github.com/SurprisedMrSeal/P2Lock) | [TOS](https://p2lock.carrd.co/#tos) | [Privacy Policy](https://p2lock.carrd.co/#privacy) | [🍞](https://discord.gg/RvFsakbRnp)',
+        '[Bot Invite](https://discord.com/oauth2/authorize?client_id=806723110761136169) | [GitHub](https://github.com/SurprisedMrSeal/P2Lock) | [TOS](https://p2lock.carrd.co/#tos) | [Privacy Policy](https://p2lock.carrd.co/#privacy) | [🍞](https://discord.gg/HVhD8QQ56d)',
         '',
         'Need help? Join the [Support Server](https://discord.gg/sFszcSvMAp).'
       ].join('\n'))
@@ -108,7 +108,7 @@ module.exports = {
         `- Use \`/config\` to configure the bot's prefix, delay to lock, and timer to automatically unlock.`,
         `- Use \`/blacklist\` to blacklist channels from getting locked automatically.`,
         '',
-        '[Bot Invite](https://discord.com/oauth2/authorize?client_id=806723110761136169) | [GitHub](https://github.com/SurprisedMrSeal/P2Lock) | [TOS](https://p2lock.carrd.co/#tos) | [Privacy Policy](https://p2lock.carrd.co/#privacy) | [🍞](https://discord.gg/RvFsakbRnp)',
+        '[Bot Invite](https://discord.com/oauth2/authorize?client_id=806723110761136169) | [GitHub](https://github.com/SurprisedMrSeal/P2Lock) | [TOS](https://p2lock.carrd.co/#tos) | [Privacy Policy](https://p2lock.carrd.co/#privacy) | [🍞](https://discord.gg/HVhD8QQ56d)',
         '',
         'Need help? Join the [Support Server](https://discord.gg/sFszcSvMAp).'
       ].join('\n'))

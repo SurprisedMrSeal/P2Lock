@@ -1,4 +1,5 @@
-//v2.5.5
+module.exports = { ver: '2.13.1' };
+
 const { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
 const { embedColor, version, getRuntime } = require('../utils');
@@ -19,7 +20,7 @@ async function createInfoEmbed(user, guildId, client) {
       { name: 'Support Server', value: '[Link](https://discord.gg/sFszcSvMAp)', inline: true },
       { name: 'TOS', value: '[Link](https://p2lock.carrd.co/#tos)', inline: true },
       { name: 'Privacy Policy', value: '[Link](https://p2lock.carrd.co/#privacy)', inline: true },
-      { name: '🍞', value: '[Link](https://discord.gg/RvFsakbRnp)', inline: true },
+      { name: '🍞', value: '[Link](https://discord.gg/HVhD8QQ56d)', inline: true },
     )
     .setFooter({ text: `Version: ${version} | Uptime: ${getRuntime()}` });
 }
