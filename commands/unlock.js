@@ -1,15 +1,16 @@
-module.exports = { ver: '2.12.15' };
+module.exports = { ver: '2.13.2' };
 
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
 
 module.exports = {
-    data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.').addStringOption(opt =>
-        opt.setName('channel')
-            .setDescription('Unlock a specific channel.')
-            .setRequired(false)
-    ),
+    data: new SlashCommandBuilder().setName('unlock').setDescription('Unlocks the current channel.')
+        .addStringOption(opt =>
+            opt.setName('channel')
+                .setDescription('Unlock a specific channel.')
+                .setRequired(false)
+        ),
     name: 'unlock',
     aliases: ['ul', 'u'],
     async execute(msg, args, client) {
@@ -59,7 +60,7 @@ module.exports = {
                 }
 
                 if (channel.type === ChannelType.GuildCategory) {
-                    if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id != Seal) {
+                    if (!msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id !== Seal) {
                         return msg.reply('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
                     }
                     await msg.reply({ content: "Category detected, unlocking the entire category...", allowedMentions: { users: [] } });
@@ -123,25 +124,25 @@ module.exports = {
         }
     },
     async executeInteraction(interaction, client) {
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         try {
             const member = await interaction.guild.members.fetch(P2);
             if (!member) {
-                return interaction.reply({
+                return interaction.editReply({
                     content: `⚠️ Error: Failed to fetch ${P2}. Please try again later.`, flags: MessageFlags.Ephemeral
                 });
             }
         } catch (err) {
-            return interaction.reply({
+            return interaction.editReply({
                 content: `⚠️ Error: <@${P2}> is not in the server. Please add the bot to unlock the channel!`, flags: MessageFlags.Ephemeral
             });
         }
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
-            return interaction.reply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
+            return interaction.editReply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
-        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id !== Seal) {
+            return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
         }
         try {
             let channel = interaction.channel;
@@ -164,11 +165,11 @@ module.exports = {
 
                 if (!channel.permissionsFor(interaction.member).has(PermissionFlagsBits.SendMessages) ||
                     !channel.permissionsFor(interaction.member).has(PermissionFlagsBits.ViewChannel)) {
-                    return interaction.followUp({ content: `❌ You need \`Send Messages\` permission in ${channel} to unlock.`, flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: `❌ You need \`Send Messages\` permission in ${channel} to unlock.`, flags: MessageFlags.Ephemeral });
                 }
 
                 if (channel.type === ChannelType.GuildCategory) {
-                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id !== Seal) {
                         return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
                     }
                     await interaction.editReply({ content: "Category detected, unlocking the entire category...", allowedMentions: { users: [] } });
@@ -194,7 +195,7 @@ module.exports = {
             const overwrite = channel.permissionOverwrites.cache.get(targetMember.id);
             // if not locked for that user, nothing to do
             if (overwrite && !overwrite.deny.has(PermissionFlagsBits.ViewChannel)) {
-                await interaction.reply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
+                await interaction.editReply({ content: 'This channel is already unlocked.', flags: MessageFlags.Ephemeral });
 
                 try {
                     await removeActiveLock(interaction.guild.id, client.user.id, channel.id);
@@ -213,6 +214,8 @@ module.exports = {
 
             if (channel.id !== interaction.channel.id) {
                 await interaction.editReply({ content: `Unlocked ${channel}.`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+            } else {
+                await interaction.deleteReply();
             }
 
             try {
@@ -225,7 +228,7 @@ module.exports = {
 
         } catch (error) {
             console.error('(Unlock Interaction) Error in unlock command:', error);
-            return interaction.reply({ content: '⚠️ Hmm, something prevented me from unlocking this channel.', flags: MessageFlags.Ephemeral });
+            return interaction.editReply({ content: '⚠️ Hmm, something prevented me from unlocking this channel.', flags: MessageFlags.Ephemeral });
         }
     }
 };

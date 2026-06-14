@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.15' };
+module.exports = { ver: '2.13.2' };
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -125,7 +125,7 @@ module.exports = {
     },
     async executeInteraction(interaction, client) {
         // defer to avoid Unknown interaction errors
-        await interaction.deferReply();
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const prefix = await getPrefixForServer(interaction.guild.id);
         try {
@@ -143,8 +143,8 @@ module.exports = {
         if (!interaction.channel.permissionsFor(client.user).has(PermissionFlagsBits.ManageRoles)) {
             return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.' });
         }
-        // Check user permissions if adminMode is enabled
-        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+
+        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id != Seal) {
             return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
         }
 
@@ -169,11 +169,11 @@ module.exports = {
 
                 if (!channel.permissionsFor(interaction.member).has(PermissionFlagsBits.SendMessages) ||
                     !channel.permissionsFor(interaction.member).has(PermissionFlagsBits.ViewChannel)) {
-                    return interaction.followUp({ content: `❌ You need \`Send Messages\` permission in ${channel} to lock.`, flags: MessageFlags.Ephemeral });
+                    return interaction.editReply({ content: `❌ You need \`Send Messages\` permission in ${channel} to lock.` });
                 }
 
                 if (channel.type === ChannelType.GuildCategory) {
-                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id != Seal) {
                         return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
                     }
                     await interaction.editReply({ content: "Category detected, locking the entire category..." });
@@ -204,32 +204,32 @@ module.exports = {
             }
 
             if (userPermissions) {
-                // edit the overwrite for the specific user
                 await channel.permissionOverwrites.edit(targetMember, { ViewChannel: false, SendMessages: false });
             } else {
-                // create a new overwrite for the specific user
                 await channel.permissionOverwrites.create(targetMember, { ViewChannel: false, SendMessages: false });
             }
-
-            // mention the user without pinging
-            const userMention = `<@${interaction.user.id}>`;
 
             if (toggleableFeatures.adminMode) {
                 await channel.send(`This channel has been locked. Ask an admin to unlock this channel!`);
                 if (channel.id !== interaction.channel.id) {
-                    await interaction.editReply({ content: `Locked ${channel}.`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+                    await interaction.editReply({ content: `Locked ${channel}.`, allowedMentions: { users: [] } });
+                } else {
+                    await interaction.deleteReply();
                 }
             } else {
                 const row = new ActionRowBuilder().addComponents(
                     new ButtonBuilder().setCustomId('unlock').setEmoji('🔓').setStyle(ButtonStyle.Secondary)
                 );
+                const userMention = `<@${interaction.user.id}>`;
                 await channel.send({
                     content: `This channel has been locked by ${userMention}. Click on 🔓 or type \`${prefix}unlock\` to unlock!`,
                     components: [row],
                     allowedMentions: { users: [] }
                 });
                 if (channel.id !== interaction.channel.id) {
-                    await interaction.editReply({ content: `Locked ${channel}.`, flags: MessageFlags.Ephemeral, allowedMentions: { users: [] } });
+                    await interaction.editReply({ content: `Locked ${channel}.`, allowedMentions: { users: [] } });
+                } else {
+                    await interaction.deleteReply();
                 }
             }
         } catch (error) {
