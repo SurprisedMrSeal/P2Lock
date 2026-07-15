@@ -19,15 +19,15 @@ module.exports = {
         if (mainSubcommand === 'locks') {
             try {
                 const activeLocks = await getActiveLocks(client.user.id);
-        
+
                 if (activeLocks.length === 0) {
                     return msg.channel.send('🔓 No active locks found.');
                 }
-        
+
                 const itemsPerPage = 5;
                 const totalPages = Math.ceil(activeLocks.length / itemsPerPage);
                 let currentPage = 1;
-        
+
                 // Button components
                 const lockButtons = new ActionRowBuilder().addComponents(
                     new ButtonBuilder()
@@ -39,65 +39,65 @@ module.exports = {
                         .setEmoji('▶️')
                         .setStyle(ButtonStyle.Secondary)
                 );
-        
+
                 const buildLockEmbed = (page) => {
                     const start = (page - 1) * itemsPerPage;
                     const currentChunk = activeLocks.slice(start, start + itemsPerPage);
-                  
+
                     const description = currentChunk.map(lock => {
-                      const guild = client.guilds.cache.get(lock.guildId);
-                      const guildName = guild ? guild.name : 'Unknown Guild';
-                  
-                      return `• Guild: \`${guildName} (${lock.guildId})\`\n` +
-                             `  Channel: \`${lock.channelId}\` | <#${lock.channelId}>\n` +
-                             `  Unlocks: <t:${lock.unlockTime}:R>`;
+                        const guild = client.guilds.cache.get(lock.guildId);
+                        const guildName = guild ? guild.name : 'Unknown Guild';
+
+                        return `• Guild: \`${guildName} (${lock.guildId})\`\n` +
+                            `  Channel: \`${lock.channelId}\` | <#${lock.channelId}>\n` +
+                            `  Unlocks: <t:${lock.unlockTime}:R>`;
                     }).join('\n\n');
-                  
+
                     return new EmbedBuilder()
-                      .setTitle(`Active Locks (${activeLocks.length})`)
-                      .setColor(embedColor)
-                      .setDescription(description)
-                      .setFooter({ text: `Page ${page}/${totalPages}` });
-                  };
-        
+                        .setTitle(`Active Locks (${activeLocks.length})`)
+                        .setColor(embedColor)
+                        .setDescription(description)
+                        .setFooter({ text: `Page ${page}/${totalPages}` });
+                };
+
                 const sentMessage = await msg.channel.send({
                     embeds: [buildLockEmbed(currentPage)],
                     components: totalPages > 1 ? [lockButtons] : []
                 });
-        
+
                 if (totalPages <= 1) return;
-        
+
                 const filter = i => {
                     if (i.user.id === msg.author.id) return true;
-                    i.reply({ content: "Not your control!", ephemeral: true }).catch(() => {});
+                    i.reply({ content: "Not your control!", ephemeral: true }).catch(() => { });
                     return false;
                 };
-        
+
                 const collector = sentMessage.createMessageComponentCollector({
                     filter,
                     time: 3 * 60 * 1000
                 });
-        
+
                 collector.on('collect', async i => {
                     currentPage = i.customId === 'locks_prev'
                         ? (currentPage > 1 ? currentPage - 1 : totalPages)
                         : (currentPage < totalPages ? currentPage + 1 : 1);
-        
+
                     await i.update({
                         embeds: [buildLockEmbed(currentPage)],
                         components: [lockButtons]
                     });
                 });
-        
+
                 collector.on('end', () => {
                     const disabledButtons = new ActionRowBuilder().addComponents(
-                        lockButtons.components.map(btn => 
+                        lockButtons.components.map(btn =>
                             ButtonBuilder.from(btn).setDisabled(true)
                         )
                     );
-                    sentMessage.edit({ components: [disabledButtons] }).catch(() => {});
+                    sentMessage.edit({ components: [disabledButtons] }).catch(() => { });
                 });
-        
+
             } catch (error) {
                 console.error('Error fetching active locks:', error);
                 return msg.channel.send('⚠️ Failed to fetch active locks.');
