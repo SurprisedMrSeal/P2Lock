@@ -1,4 +1,5 @@
-//2.7.1
+module.exports = { ver: '2.13.4' };
+
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require('discord.js');
 const { getEventList, saveEventList, getActiveLocks } = require('../mongoUtils');
 const { Seal, embedColor } = require('../utils');
@@ -48,7 +49,7 @@ module.exports = {
                       const guildName = guild ? guild.name : 'Unknown Guild';
                   
                       return `• Guild: \`${guildName} (${lock.guildId})\`\n` +
-                             `  Channel: \`${lock.channelId}\`\n` +
+                             `  Channel: \`${lock.channelId}\` | <#${lock.channelId}>\n` +
                              `  Unlocks: <t:${lock.unlockTime}:R>`;
                     }).join('\n\n');
                   
