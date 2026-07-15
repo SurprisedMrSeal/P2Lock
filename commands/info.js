@@ -1,4 +1,4 @@
-module.exports = { ver: '2.13.1' };
+module.exports = { ver: '2.13.6' };
 
 const { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
@@ -30,6 +30,7 @@ module.exports = {
     .setName('info')
     .setDescription('Gives you some information about the Bot.'),
   name: 'info',
+  aliases: ['invite', 'bread'],
 
   // message-based command
   async execute(msg, args, client) {
