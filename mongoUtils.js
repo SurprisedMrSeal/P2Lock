@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.1' };
+module.exports = { ver: '2.14.0' };
 
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
@@ -13,6 +13,7 @@ const defaultPrefix = prefix;
 
 // --- In-memory caches ---
 const prefixCache = new Map();          // guildId -> prefix
+const lulRoleCache = new Map();         // guildId -> lockUnlockRoleId
 const delayCache = new Map();           // guildId -> delay
 const timerCache = new Map();           // guildId -> timer
 const toggleCache = new Map();          // guildId -> toggle features
@@ -57,6 +58,35 @@ async function updatePrefixForServer(guildId, newPrefix) {
         return true;
     } catch (error) {
         console.error('Error updating prefix in MongoDB:', error);
+        return false;
+    }
+}
+
+// Lock/UnlockRole
+async function getlulRoleId(guildId) {
+    if (lulRoleCache.has(guildId)) return lulRoleCache.get(guildId);
+    try {
+        const doc = await mongoClient.db(DB).collection('config').findOne({ guildId });
+        const value = doc?.lulRoleId || '0';
+        lulRoleCache.set(guildId, value);
+        return value;
+    } catch (error) {
+        console.error('Error fetching lulRoleId from MongoDB:', error);
+        return '0';
+    }
+}
+
+async function updatelulRoleId(guildId, newId) {
+    try {
+        await mongoClient.db(DB).collection('config').updateOne(
+            { guildId },
+            { $set: { lulRoleId: newId } },
+            { upsert: true }
+        );
+        lulRoleCache.set(guildId, newId);
+        return true;
+    } catch (error) {
+        console.error('Error updating lulRoleId in MongoDB:', error);
         return false;
     }
 }
@@ -366,6 +396,8 @@ module.exports = {
     connectToMongo,
     getPrefixForServer,
     updatePrefixForServer,
+    getlulRoleId,
+    updatelulRoleId,
     saveToggleableFeatures,
     loadToggleableFeatures,
     getDefaultToggleableFeatures,

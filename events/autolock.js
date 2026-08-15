@@ -1,7 +1,7 @@
-module.exports = { ver: '2.13.0' };
+module.exports = { ver: '2.14.0' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList } = require('../mongoUtils');
+const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList, getlulRoleId } = require('../mongoUtils');
 const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
 
 const lockCooldowns = new Map();
@@ -161,19 +161,21 @@ module.exports = {
                 islocked = true;
 
                 let lockContent = '';
+                const roleId = await getlulRoleId(msg.guild.id);
+
                 if (timerMinutes > 0) {
                     const currentTime = Math.floor(Date.now() / 1000);
                     const unlockTime = currentTime + (timerMinutes * 60);
                     await removeActiveLock(msg.guild.id, client.user.id, msg.channel.id);
                     await saveActiveLock(msg.guild.id, msg.channel.id, client.user.id, currentTime, unlockTime);
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `This channel has been locked. Ask an admin to unlock this channel.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
+                        lockContent = `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     } else {
                         lockContent = `This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     }
                 } else {
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `This channel has been locked. Ask an admin to unlock this channel.`;
+                        lockContent = `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.`;
                     } else {
                         lockContent = `This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock!`;
                     }
@@ -188,9 +190,9 @@ module.exports = {
                                 .setEmoji('🔓')
                                 .setStyle(ButtonStyle.Secondary)
                         );
-                        await warningMessage.edit({ content: lockContent, components: [row] });
+                        await warningMessage.edit({ content: lockContent, components: [row], allowedMentions: { roles: [] } });
                     } else {
-                        await warningMessage.edit(lockContent);
+                        await warningMessage.edit({ content: lockContent, allowedMentions: { roles: [] } });
                     }
                     lockMessage = warningMessage;
                 } else {
@@ -201,9 +203,9 @@ module.exports = {
                                 .setEmoji('🔓')
                                 .setStyle(ButtonStyle.Secondary)
                         );
-                        lockMessage = await msg.channel.send({ content: lockContent, components: [row] });
+                        lockMessage = await msg.channel.send({ content: lockContent, components: [row], allowedMentions: { roles: [] } });
                     } else {
-                        lockMessage = await msg.channel.send(lockContent);
+                        lockMessage = await msg.channel.send({ content: lockContent, allowedMentions: { roles: [] } });
                     }
                 }
 

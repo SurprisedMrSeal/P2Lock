@@ -1,4 +1,4 @@
-module.exports = { ver: '2.12.10' };
+module.exports = { ver: '2.14.0' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require('discord.js');
 const { loadToggleableFeatures, saveToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
@@ -16,7 +16,7 @@ const featureDisplayName = {
     lockAfk: 'LockAfk\n`Toggle whether it locks for AFK users (Locks if true).`',
     pingAfk: 'PingAfk\n`Toggle whether it pings AFK shiny hunters.`',
     autoPin: 'AutoPin\n`Toggle whether it pins a "Shiny caught" message.`',
-    adminMode: 'AdminMode\n`Toggle whether the lock/unlock commands are admin only.`',
+    adminMode: 'AdminMode\n`Toggle whether the lock/unlock commands are admin (and Lock/UnlockRole) only.`',
     bwlist: 'Blacklist`/`Whitelist\n`Toggle whether channels are blacklisted or whitelisted to lock.`'
 };
 

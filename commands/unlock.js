@@ -1,7 +1,7 @@
-module.exports = { ver: '2.13.2' };
+module.exports = { ver: '2.14.0' };
 
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
-const { loadToggleableFeatures, removeActiveLock } = require('../mongoUtils');
+const { loadToggleableFeatures, removeActiveLock, getlulRoleId } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
 
 module.exports = {
@@ -28,12 +28,16 @@ module.exports = {
         }
 
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
+        const roleId = await getlulRoleId(msg.guild.id);
 
         if (!msg.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
             return msg.channel.send('⚠️ Error: I don\'t have the `Manage Roles` permission to unlock this channel.');
         }
-        if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id !== Seal) {
-            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+        if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && msg.member.roles.cache.has(roleId)) && msg.author.id != Seal) {
+            return msg.channel.send({
+                content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                allowedMentions: { roles: [] }
+            });
         }
 
         try {
@@ -169,8 +173,11 @@ module.exports = {
                 }
 
                 if (channel.type === ChannelType.GuildCategory) {
-                    if (!interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id !== Seal) {
-                        return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
+                    if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && interaction.member.roles.cache.has(roleId)) && interaction.user.id != Seal) {
+                        return interaction.editReply({
+                            content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                            allowedMentions: { roles: [] }
+                        });
                     }
                     await interaction.editReply({ content: "Category detected, unlocking the entire category...", allowedMentions: { users: [] } });
 

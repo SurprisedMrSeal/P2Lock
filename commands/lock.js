@@ -1,7 +1,7 @@
-module.exports = { ver: '2.13.2' };
+module.exports = { ver: '2.14.0' };
 
 const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
-const { loadToggleableFeatures, getPrefixForServer } = require('../mongoUtils');
+const { loadToggleableFeatures, getPrefixForServer, getlulRoleId } = require('../mongoUtils');
 const { P2, Seal } = require('../utils');
 
 module.exports = {
@@ -16,6 +16,7 @@ module.exports = {
     async execute(msg, args, client) {
         const toggleableFeatures = await loadToggleableFeatures(msg.guild.id);
         const prefix = await getPrefixForServer(msg.guild.id);
+        const roleId = await getlulRoleId(msg.guild.id);
         try {
             const member = await msg.guild.members.fetch(P2);
             if (!member) {
@@ -33,8 +34,11 @@ module.exports = {
             return msg.channel.send('⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.');
         }
         // Check user permissions if adminMode is enabled
-        if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && msg.author.id != Seal) {
-            return msg.channel.send('❌ You must have the `Manage Server` permission or `Administrator` to use this command.');
+        if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && msg.member.roles.cache.has(roleId)) && msg.author.id != Seal) {
+            return msg.channel.send({
+                content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                allowedMentions: { roles: [] }
+            });
         }
         try {
             let channel = msg.channel; // default
@@ -100,7 +104,7 @@ module.exports = {
             const userMention = `<@${msg.author.id}>`;
 
             if (toggleableFeatures.adminMode) {
-                await channel.send(`This channel has been locked. Ask an admin to unlock this channel!`);
+                await channel.send({ content: `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel!`, allowedMentions: { users: [] }});
                 if (channel != msg.channel) {
                     await msg.reply({ content: `Locked ${channel}.`, allowedMentions: { users: [] } });
                 }
@@ -128,6 +132,7 @@ module.exports = {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
         const prefix = await getPrefixForServer(interaction.guild.id);
+        const roleId = await getlulRoleId(interaction.guild.id);
         try {
             const member = await interaction.guild.members.fetch(P2);
             if (!member) {
@@ -144,8 +149,11 @@ module.exports = {
             return interaction.editReply({ content: '⚠️Error: I\'m missing the `Manage Roles` permission to lock this channel.' });
         }
 
-        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id != Seal) {
-            return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.' });
+        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && interaction.member.roles.cache.has(roleId)) && interaction.user.id != Seal) {
+            return interaction.editReply({
+                content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                allowedMentions: { roles: [] }
+            });
         }
 
         try {
@@ -210,7 +218,7 @@ module.exports = {
             }
 
             if (toggleableFeatures.adminMode) {
-                await channel.send(`This channel has been locked. Ask an admin to unlock this channel!`);
+                await channel.send({ content: `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel!`, allowedMentions: { users: [] }});
                 if (channel.id !== interaction.channel.id) {
                     await interaction.editReply({ content: `Locked ${channel}.`, allowedMentions: { users: [] } });
                 } else {

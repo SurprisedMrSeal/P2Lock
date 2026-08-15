@@ -1,4 +1,4 @@
-module.exports = { ver: '2.13.5' };
+module.exports = { ver: '2.14.0' };
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, SlashCommandBuilder, MessageFlags, PermissionFlagsBits } = require('discord.js');
 const { getPrefixForServer } = require('../mongoUtils');
@@ -9,7 +9,7 @@ const commandDefs = prefix => [
   { name: 'ping', description: `Displays the bot's latency and roundtrip.\n\`${prefix}ping\`` },
   { name: 'lock', description: `Locks the current channel or a specific channel/category if mentioned.\n\`${prefix}lock <>\` \`${prefix}l <>\`` },
   { name: 'unlock', description: `Unlocks the current channel or a specific channel/category if mentioned.\n\`${prefix}unlock <>\` \`${prefix}u <>\`` },
-  { name: 'config', description: `Configure values like prefix, locking delay, and unlocking timer.\n\`${prefix}config <> []\`` },
+  { name: 'config', description: `Configure values like prefix, locking delay, unlocking timer, and lock/unlock role.\n\`${prefix}config <> []\`` },
   { name: 'toggle', description: `Lets you toggle specific settings.\n\`${prefix}toggle <>\`` },
   { name: 'pingafk', description: `[Pings the afk members using Poké-Name or P2 Assistant.](https://imgur.com/7IFcOuT)\n\`${prefix}pingafk <>\` \`${prefix}pa <>\`` },
   { name: 'custom', description: `Lets you lock for specific Pokémon, regardless of pings.\n\`${prefix}custom <> <>\` \`${prefix}cs <> <>\`` },
