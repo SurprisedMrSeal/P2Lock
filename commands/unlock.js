@@ -1,4 +1,4 @@
-module.exports = { ver: '2.14.0' };
+module.exports = { ver: '2.14.1' };
 
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags, ChannelType } = require('discord.js');
 const { loadToggleableFeatures, removeActiveLock, getlulRoleId } = require('../mongoUtils');
@@ -35,7 +35,7 @@ module.exports = {
         }
         if (toggleableFeatures.adminMode && !msg.member.permissions.has(PermissionFlagsBits.ManageGuild) && !msg.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && msg.member.roles.cache.has(roleId)) && msg.author.id != Seal) {
             return msg.channel.send({
-                content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                content: `❌ You must have the ${roleId && roleId !== '0' ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
                 allowedMentions: { roles: [] }
             });
         }
@@ -130,6 +130,7 @@ module.exports = {
     async executeInteraction(interaction, client) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const toggleableFeatures = await loadToggleableFeatures(interaction.guild.id);
+        const roleId = await getlulRoleId(interaction.guild.id);
         try {
             const member = await interaction.guild.members.fetch(P2);
             if (!member) {
@@ -145,8 +146,10 @@ module.exports = {
         if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.ManageRoles)) {
             return interaction.editReply({ content: '⚠️ I\'m missing the `Manage Roles` permission to unlock this channel.', flags: MessageFlags.Ephemeral });
         }
-        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && interaction.user.id !== Seal) {
-            return interaction.editReply({ content: '❌ You must have the `Manage Server` permission or `Administrator` to use this command.', flags: MessageFlags.Ephemeral });
+        if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && interaction.member.roles.cache.has(roleId)) && interaction.user.id != Seal) {
+            return interaction.editReply({
+                content: `❌ You must have the ${roleId && roleId !== '0' ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                allowedMentions: { roles: [] }, flags: MessageFlags.Ephemeral });
         }
         try {
             let channel = interaction.channel;
@@ -175,7 +178,7 @@ module.exports = {
                 if (channel.type === ChannelType.GuildCategory) {
                     if (toggleableFeatures.adminMode && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator) && !(roleId && interaction.member.roles.cache.has(roleId)) && interaction.user.id != Seal) {
                         return interaction.editReply({
-                            content: `❌ You must have the ${roleId ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
+                            content: `❌ You must have the ${roleId && roleId !== '0' ? `<@&${roleId}> Role, ` : ""} \`Manage Server\` permission or \`Administrator\` to use this command.`,
                             allowedMentions: { roles: [] }
                         });
                     }

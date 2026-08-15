@@ -1,4 +1,4 @@
-module.exports = { ver: '2.14.0' };
+module.exports = { ver: '2.14.1' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList, getlulRoleId } = require('../mongoUtils');
@@ -169,13 +169,13 @@ module.exports = {
                     await removeActiveLock(msg.guild.id, client.user.id, msg.channel.id);
                     await saveActiveLock(msg.guild.id, msg.channel.id, client.user.id, currentTime, unlockTime);
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
+                        lockContent = `This channel has been locked. Ask an admin ${roleId && roleId !== '0' ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     } else {
                         lockContent = `This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock.\n-# ⏳ Automatically Unlocks <t:${unlockTime}:R>`;
                     }
                 } else {
                     if (toggleableFeatures.adminMode) {
-                        lockContent = `This channel has been locked. Ask an admin ${roleId ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.`;
+                        lockContent = `This channel has been locked. Ask an admin ${roleId && roleId !== '0' ? `or someone with the <@&${roleId}> role ` : ""}to unlock this channel.`;
                     } else {
                         lockContent = `This channel has been locked. Click on 🔓 or type \`${prefix}unlock\` to unlock!`;
                     }
