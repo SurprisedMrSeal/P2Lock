@@ -1,4 +1,4 @@
-module.exports = { ver: '2.14.0' };
+module.exports = { ver: '2.14.2' };
 
 const { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, MessageFlags, AllowedMentionsTypes } = require('discord.js');
 const { getDelay, getTimer, updatePrefixForServer, updateDelay, updateTimer, getPrefixForServer, getlulRoleId, updatelulRoleId } = require('../mongoUtils');
@@ -110,7 +110,7 @@ module.exports = {
             }
             updatelulRoleId(msg.guild.id, roleId)
                 .then(() => msg.channel.send({
-                    content: `Lock/Unlock Role updated to <@&${roleId}>`,
+                    content: `Lock/Unlock Role updated to <@&${roleId}>\n-# When admin mode is on, only server admins and people with this role can lock and unlock channels.`,
                     allowedMentions: { roles: [] }
                 }))
                 .catch(error => {
@@ -207,7 +207,7 @@ module.exports = {
                 }
                 await updatelulRoleId(interaction.guild.id, roleId);
                 return interaction.editReply({
-                    content: `Lock/Unlock Role updated to <@&${roleId}>`,
+                    content: `Lock/Unlock Role updated to <@&${roleId}>\n-# When admin mode is on, only server admins and people with this role can lock and unlock channels.`,
                     allowedMentions: { roles: [] }
                 });
             } else {
