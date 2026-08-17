@@ -1,12 +1,21 @@
-module.exports = {ver: '2.8.5'};
+module.exports = {ver: '2.14.3'};
 
 const fs = require('fs');
 const path = require('path');
-// const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-// const version = packageJson.version;
 
 const versionRegex = /ver\s*:\s*['"](\d+\.\d+\.\d+)['"]/;
 let highestVersion = '0.0.0';
+
+const P2 = "716390085896962058";
+const Pname = "874910942490677270";
+const P2a = "854233015475109888";
+const P2a_P = "1254602968938844171";
+const hat = "1307910235737948252";
+
+const Seal = "590572827485405194";
+
+const prefix = ";";
+const embedColor = "008080";
 
 function parseVersion(verStr) {
     return verStr.split('.').map(Number);
@@ -56,16 +65,6 @@ function scanFolder(folderPath) {
     if (fs.existsSync(folderPath)) scanFolder(folderPath);
 });
 
-const P2 = "716390085896962058";
-const Pname = "874910942490677270";
-const P2a = "854233015475109888";
-const P2a_P = "1254602968938844171";
-
-const Seal = "590572827485405194";
-
-const prefix = ";";
-const embedColor = "008080";
-
 const startTime = Date.now();
 
 function getRuntime() {
@@ -82,6 +81,7 @@ module.exports = {
     Pname,
     P2a,
     P2a_P,
+    hat,
     Seal,
     prefix,
     embedColor,

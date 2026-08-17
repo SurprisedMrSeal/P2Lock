@@ -1,6 +1,7 @@
-//v2.8.1
+module.exports = {ver: '2.14.3'};
+
 const { getPrefixForServer, getAfkPingOptOutList, toggleAfkPingOptOut } = require('../mongoUtils');
-const { Pname, P2a, P2a_P, Seal } = require('../utils');
+const { Pname, P2a, P2a_P, hat, Seal } = require('../utils');
 
 module.exports = {
     name: 'pingafk',
@@ -16,7 +17,7 @@ module.exports = {
         }
 
         if (!msg.reference) {
-            return msg.channel.send(`⚠️ Please reply to a message from <@${Pname}> or <@${P2a}>.\n\n-# Run \`${prefix}pingafk optout\` to opt out of pings.`);
+            return msg.channel.send(`⚠️ Please reply to a message from <@${P2a}>, <@${Pname}> or <@${hat}>.\n-# Run \`${prefix}pingafk optout\` to opt out of pings.`);
         }
 
         let referencedMessage;
@@ -29,7 +30,7 @@ module.exports = {
 
         const isValidBot = [Pname, P2a, P2a_P, Seal].includes(referencedMessage.author.id);
         if (!referencedMessage.content || !isValidBot) {
-            return msg.channel.send(`⚠️ Please reply to a message from <@${Pname}> or <@${P2a}>.\n\n-# Run \`${prefix}pingafk optout\` to opt out of pings.`);
+            return msg.channel.send(`⚠️ Please reply to a message from <@${P2a}>, <@${Pname}> or <@${hat}>.\n-# Run \`${prefix}pingafk optout\` to opt out of pings.`);
         }
 
         const shinyHuntPingsSectionRegex = /(?:\*\*✨?\s*Shiny Hunt Pings:\*\*|Shiny hunt pings:)([\s\S]*?)(?=\*\*|Collection|Type|Quest|$)/i;

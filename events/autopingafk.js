@@ -1,7 +1,7 @@
-module.exports = { ver: '2.12.3' };
+module.exports = { ver: '2.14.3' };
 
 const { loadToggleableFeatures, loadBlacklistedChannels, getPrefixForServer, getAfkPingOptOutList } = require('../mongoUtils');
-const { Pname, P2a, P2a_P, Seal } = require('../utils');
+const { Pname, P2a, P2a_P, hat, Seal } = require('../utils');
 
 module.exports = {
     name: 'messageCreate',
@@ -20,7 +20,7 @@ module.exports = {
             (!toggleableFeatures.bwlist && !blacklistedChannels.includes(msg.channel.id)) // Whitelist mode and this channel is not listed, return
         ) return;
 
-        const isFromValidAuthor = [Pname, P2a, P2a_P, Seal].includes(msg.author.id);
+        const isFromValidAuthor = [Pname, P2a, P2a_P, hat, Seal].includes(msg.author.id);
         if (!isFromValidAuthor) return;
 
         const shinyHuntRegex = /(?:\*\*✨?\s*Shiny Hunt Pings:\*\*|Shiny hunt pings:)([\s\S]*?)(?=(\*\*|Collection|Type|Quest|$))/i;

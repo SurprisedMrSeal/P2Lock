@@ -1,8 +1,8 @@
-module.exports = { ver: '2.14.1' };
+module.exports = { ver: '2.14.3' };
 
 const { PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { getPrefixForServer, loadToggleableFeatures, getDelay, getTimer, saveActiveLock, removeActiveLock, getActiveLock, getEventList, loadBlacklistedChannels, getCustomList, getlulRoleId } = require('../mongoUtils');
-const { P2, Pname, P2a, P2a_P, Seal } = require('../utils');
+const { P2, Pname, P2a, P2a_P, hat, Seal } = require('../utils');
 
 const lockCooldowns = new Map();
 const errorCooldowns = new Map();
@@ -55,7 +55,7 @@ module.exports = {
             return;
         }
 
-        if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) &&
+        if ([Pname, P2a, P2a_P, hat, Seal].includes(msg.author.id) &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
             (
                 (toggleableFeatures.includeShinyHuntPings && hasPing('shiny hunt pings:')) ||
@@ -225,7 +225,7 @@ module.exports = {
                 (!toggleableFeatures.lockAfk && !/<@\d+>/.test(line))
             );
 
-        if ([Pname, P2a, P2a_P, Seal].includes(msg.author.id) && !islocked &&
+        if ([Pname, P2a, P2a_P, hat, Seal].includes(msg.author.id) && !islocked &&
             msg.channel.permissionsFor(client.user).has(PermissionFlagsBits.SendMessages) &&
             (
                 (toggleableFeatures.includeShinyHuntPings && shouldIgnorePing('shiny hunt pings:')) ||
